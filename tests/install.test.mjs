@@ -27,16 +27,18 @@ test('dismissed browser prompt is consumed once; a new offer becomes usable',asy
   assert.match(controller.getSnapshot().error,/menu/);
   const retry=offer(target);await controller.install();assert.equal(retry(),1);
 });
-test('accepted offer does not fake successful installation; native confirmation opens access',async()=>{
+test('browser installation confirms success without opening login; only standalone opens access',async()=>{
   const {target}=browser();const controller=createInstallController(target);
   offer(target,'accepted');await controller.install();
   assert.equal(controller.getSnapshot().installed,false);
   target.dispatchEvent(new Event('appinstalled'));
   assert.equal(controller.getSnapshot().installed,true);
+  assert.equal(controller.getSnapshot().standalone,false);
 });
 test('standalone app opens directly and display-mode changes are detected',()=>{
   const {target}=browser(true);assert.equal(createInstallController(target).getSnapshot().installed,true);
   const second=browser();const controller=createInstallController(second.target);
   const change=new Event('change');change.matches=true;second.mode.dispatchEvent(change);
   assert.equal(controller.getSnapshot().installed,true);
+  assert.equal(controller.getSnapshot().standalone,true);
 });

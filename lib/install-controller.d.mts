@@ -1,6 +1,7 @@
 export type InstallState = {
   prompt: {prompt(): Promise<void>; userChoice: Promise<{outcome: string}>} | null;
   installed: boolean;
+  standalone: boolean;
   busy: boolean;
   error: string;
 };

@@ -16,7 +16,15 @@ if (window.isSecureContext && 'serviceWorker' in navigator) {
 
 export default function InstallApp({children}: {children: ReactNode}) {
   const state = useSyncExternalStore(installation.subscribe, installation.getSnapshot);
-  if (!mobile || state.installed) return <>{children}</>;
+  if (!mobile || state.standalone) return <>{children}</>;
+  if (state.installed) return <main className="mobile-install">
+    <section aria-labelledby="installed-title" role="status">
+      <img src={asset('/icons/pllugo-192.png')} width="88" height="88" alt="Pllugo"/>
+      <h1 id="installed-title">Aplicativo instalado com sucesso!</h1>
+      <p>Agora você pode fechar esta aba do navegador.</p>
+      <div className="mobile-install-step">Na tela inicial do celular, toque no ícone <strong>Pllugo Operação</strong> para entrar.</div>
+    </section>
+  </main>;
   const chrome = 'intent://' + new URL(document.baseURI).host + new URL(document.baseURI).pathname
     + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='
     + encodeURIComponent(new URL(document.baseURI).href) + ';end';
