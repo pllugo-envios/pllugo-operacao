@@ -1,0 +1,4 @@
+Marcas oficiais incorporadas em 19/10/2026. Uso identificador interno de clientes.
+Pllugo: https://pllugo.com.br/assets/imgs/logo.png — referenciada na página https://pllugo.com.br/
+J&T: https://www.jtexpress.com.br/img/footer-logo.0ffe1ed3.png — referenciada no rodapé do site oficial, bundle /js/6191.9f47ec1b.js
+Imile: https://www.imile.com/images/logos/Christmas_logo_Blue.svg — referenciada pelo cabeçalho do site oficial /pt, bundle /_next/static/chunks/pages/_app-e865decde5db01d3.js

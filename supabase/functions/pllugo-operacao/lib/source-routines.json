@@ -1,0 +1,202 @@
+[
+  {
+    "sourceRow": 2,
+    "order": 1,
+    "time": "05:00",
+    "category": "RECEBIMENTO",
+    "title": "Deslacre do caminhão",
+    "detail": ""
+  },
+  {
+    "sourceRow": 3,
+    "order": 15,
+    "time": "05:00",
+    "category": "DEVOLUÇÃO",
+    "title": "Devolução",
+    "detail": ""
+  },
+  {
+    "sourceRow": 4,
+    "order": 2,
+    "time": "08:00",
+    "category": "RECEBIMENTO",
+    "title": "Pedidos que não chegaram",
+    "detail": ""
+  },
+  {
+    "sourceRow": 5,
+    "order": 99,
+    "time": "08:30",
+    "category": "RECEBIMENTO",
+    "title": "Registro de Avaria",
+    "detail": ""
+  },
+  {
+    "sourceRow": 6,
+    "order": 3,
+    "time": "10:00",
+    "category": "RECEBIMENTO",
+    "title": "Total Recebido",
+    "detail": ""
+  },
+  {
+    "sourceRow": 7,
+    "order": 8,
+    "time": "10:00",
+    "category": "MONITORAMENTO",
+    "title": "Retorno de Ocorrencias",
+    "detail": ""
+  },
+  {
+    "sourceRow": 8,
+    "order": 12,
+    "time": "10:00",
+    "category": "TRATATIVAS",
+    "title": "Realizar as acareações",
+    "detail": ""
+  },
+  {
+    "sourceRow": 9,
+    "order": 18,
+    "time": "11:00",
+    "category": "DEVOLUÇÃO",
+    "title": "Registro de Erro de triagem",
+    "detail": ""
+  },
+  {
+    "sourceRow": 10,
+    "order": 99,
+    "time": "12:00",
+    "category": "TRATATIVAS",
+    "title": "Preparar Devolução Avaria",
+    "detail": ""
+  },
+  {
+    "sourceRow": 11,
+    "order": 19,
+    "time": "12:00",
+    "category": "DEVOLUÇÃO",
+    "title": "Preparar Devolução pedidos Aprovados",
+    "detail": "Gerar Lote"
+  },
+  {
+    "sourceRow": 12,
+    "order": 20,
+    "time": "12:00",
+    "category": "DEVOLUÇÃO",
+    "title": "Prepara Devolução de Erro de triagem",
+    "detail": ""
+  },
+  {
+    "sourceRow": 13,
+    "order": 9,
+    "time": "12:30",
+    "category": "TRATATIVAS",
+    "title": "Registro de Pedidos que não estão na base",
+    "detail": "nessa rotina deve ser criada de forma custimizada, pois precisamo que o nosso colaborador informe os pedidos totais"
+  },
+  {
+    "sourceRow": 14,
+    "order": 99,
+    "time": "12:30",
+    "category": "TRATATIVAS",
+    "title": "Tratativa de pedidos Recebidos e não saiu em Rota",
+    "detail": "essa tarefa deve ser customizada, e deve ser uma subtarefa atrelada a anterior de Registro de Pedidos que não estão na base, todos ospedidos informados ali devem vir para essa tarefa onde o colaborador podera flegar e deixar status como resolvido, aguardando ou extravio deixando verde, amarelo ou vermelho"
+  },
+  {
+    "sourceRow": 15,
+    "order": 4,
+    "time": "13:00",
+    "category": "EXPEDIÇÃO",
+    "title": "Piso Limpo",
+    "detail": ""
+  },
+  {
+    "sourceRow": 16,
+    "order": 5,
+    "time": "13:00",
+    "category": "EXPEDIÇÃO",
+    "title": "Total Expedido",
+    "detail": ""
+  },
+  {
+    "sourceRow": 17,
+    "order": 10,
+    "time": "13:00",
+    "category": "TRATATIVAS",
+    "title": "Consultar pedidos de tratativas",
+    "detail": ""
+  },
+  {
+    "sourceRow": 18,
+    "order": 11,
+    "time": "13:00",
+    "category": "TRATATIVAS",
+    "title": "Pedidos Retidos",
+    "detail": ""
+  },
+  {
+    "sourceRow": 19,
+    "order": 14,
+    "time": "13:00",
+    "category": "TRATATIVAS",
+    "title": "Backlog",
+    "detail": ""
+  },
+  {
+    "sourceRow": 20,
+    "order": 16,
+    "time": "13:00",
+    "category": "DEVOLUÇÃO",
+    "title": "Registrar os 3x ausentes para Devolução",
+    "detail": ""
+  },
+  {
+    "sourceRow": 21,
+    "order": 17,
+    "time": "13:00",
+    "category": "DEVOLUÇÃO",
+    "title": "Consultar aprovados para Devolução",
+    "detail": ""
+  },
+  {
+    "sourceRow": 22,
+    "order": 22,
+    "time": "13:00",
+    "category": "DEVOLUÇÃO",
+    "title": "Pedidos aguardando Aprovação para Devolução",
+    "detail": ""
+  },
+  {
+    "sourceRow": 23,
+    "order": 6,
+    "time": "14:00",
+    "category": "MONITORAMENTO",
+    "title": "Monitoramento de Motoristas",
+    "detail": ""
+  },
+  {
+    "sourceRow": 24,
+    "order": 7,
+    "time": "14:00",
+    "category": "MONITORAMENTO",
+    "title": "Cobrar pendencias de motoristas",
+    "detail": ""
+  },
+  {
+    "sourceRow": 25,
+    "order": 13,
+    "time": "14:00",
+    "category": "TRATATIVAS",
+    "title": "Atualizar Extravios",
+    "detail": "Tickets\nRetidos"
+  },
+  {
+    "sourceRow": 26,
+    "order": 21,
+    "time": "15:00",
+    "category": "DEVOLUÇÃO",
+    "title": "Solicitar ID J&T",
+    "detail": ""
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "id": "./",
+  "name": "Operação Pllugo",
+  "short_name": "Pllugo Operação",
+  "description": "Checklist diário, evidências e qualidade das unidades Pllugo.",
+  "lang": "pt-BR",
+  "start_url": "./?source=homescreen",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fafafb",
+  "theme_color": "#F04A4F",
+  "icons": [
+    {
+      "src": "./icons/pllugo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/pllugo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/pllugo-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "prefer_related_applications": false,
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ]
+}

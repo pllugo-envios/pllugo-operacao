@@ -1,0 +1,4 @@
+// No task, photo, credential, or API response is cached on the device.
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
+self.addEventListener('fetch',event=>{if(event.request.mode==='navigate')event.respondWith(fetch(event.request).catch(()=>new Response('<!doctype html><html lang="pt-BR"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pllugo — conexão necessária</title><body style="font:16px system-ui;padding:32px;color:#444"><h1>Conecte-se para continuar</h1><p>As tarefas e fotos precisam de internet para serem carregadas e salvas.</p><p>Nenhuma atividade foi enviada sem conexão.</p><button onclick="location.reload()" style="padding:14px;background:#f04a4f;color:white;border:0;border-radius:8px">Tentar novamente</button></body></html>',{status:503,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}})))});
