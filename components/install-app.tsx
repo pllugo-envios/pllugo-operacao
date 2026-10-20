@@ -8,7 +8,7 @@ const ua = navigator.userAgent;
 const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const android = /Android/i.test(ua);
 const mobile = ios || android;
-const embedded = /; wv\)|FBAN|FBAV|Instagram|ChatGPT/i.test(ua) || window.self !== window.top;
+const embedded = /; wv\)|FBAN|FBAV|Instagram|WhatsApp|GSA|GoogleApp|ChatGPT/i.test(ua) || window.self !== window.top;
 if (window.isSecureContext && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register(asset('/sw.js'), {scope: new URL(document.baseURI).pathname})
     .then(registration => registration.update()).catch(() => {});

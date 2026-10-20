@@ -28,6 +28,20 @@ da API, fotos, senhas ou registros operacionais em cache.
 
 ## Acesso e dados
 
+O link `https://pllugo-envios.github.io/pllugo-operacao/acesso/` pode ser
+compartilhado no WhatsApp. No Chrome/Android, continua direto para o app; em
+navegadores internos oferece um link Android Intent para abrir o Chrome. O sistema
+pode exigir um toque ou confirmação para sair do WhatsApp. No iPhone, a página
+orienta o uso do Safari. O destino é fixo e não recebe credenciais na URL.
+
+Em Equipe, administradores podem usar **Copiar acesso** para copiar uma mensagem
+personalizada com nome, login, senha provisória e instruções. A senha provisória
+recém-gerada fica somente na memória da sessão administrativa. Senhas pessoais
+não são recuperáveis. Sem uma senha provisória disponível, o administrador precisa
+confirmar **Gerar senha e copiar**, que redefine a senha e revoga as sessões
+anteriores. Falhas de permissão da área de transferência deixam a mensagem
+selecionável para cópia manual. Não há envio automático pelo WhatsApp.
+
 - Usuários existentes mantêm os papéis, unidades, atribuições e senhas do Operação.
 - Uma conta cadastrada no Operação que ainda não possui senha local pode entrar
   com seu acesso Supabase já existente, desde que o e-mail tenha sido confirmado.
