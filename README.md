@@ -14,10 +14,14 @@ privado `operacao-evidencias`. Não é necessário um servidor Railway.
 
 ## Instalação no celular
 
-No endereço definitivo, toque em **Instalar aplicativo**. Android usa a instalação
-oferecida pelo Chrome; no iPhone, use Safari → Compartilhar → Adicionar à Tela de
-Início. O manifest e o service worker se limitam a `/pllugo-operacao/`, preservando
-os outros aplicativos publicados na mesma conta GitHub Pages.
+No celular, uma única tela de instalação aparece antes do acesso. Quando o Chrome
+oferece a instalação nativa, o botão **Instalar** abre a confirmação do navegador.
+Sem essa oferta, a tela informa o caminho no menu. No iPhone, o Safari exige
+Compartilhar → Adicionar à Tela de Início. A página não pode instalar sem a
+confirmação do sistema. Ao abrir pelo ícone instalado, o acesso é liberado.
+No computador, os controles de instalação não aparecem. O manifest e o service
+worker se limitam a `/pllugo-operacao/`, preservando os outros aplicativos
+publicados na mesma conta GitHub Pages.
 
 As tarefas e as fotos precisam de conexão. O service worker não guarda respostas
 da API, fotos, senhas ou registros operacionais em cache.

@@ -1,7 +1,42 @@
-import {asset,api as fetch,isRemembered,setRememberSession} from '../lib/client-api';
+import {useSyncExternalStore, type ReactNode} from 'react';
+import {asset} from '../lib/client-api';
+import {createInstallController} from '../lib/install-controller.mjs';
 
-import {useEffect,useState} from 'react';
-import {Download,Smartphone,X,Copy,ExternalLink} from 'lucide-react';
-export default function InstallApp(){const [prompt,setPrompt]=useState<any>(null),[installed,setInstalled]=useState(false),[help,setHelp]=useState(false),[android,setAndroid]=useState(false),[embedded,setEmbedded]=useState(false),[status,setStatus]=useState(''),[worker,setWorker]=useState('Verificando instalação…'),[origin,setOrigin]=useState(''),[ios,setIos]=useState(false),[mobile,setMobile]=useState(false),[dismissed,setDismissed]=useState(false);useEffect(()=>{setOrigin(new URL('?instalar=1',document.baseURI).href);setIos(/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1));setMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||navigator.maxTouchPoints>1);try{setDismissed(sessionStorage.getItem('pllugo-install-dismissed')==='1')}catch{}if(new URLSearchParams(window.location.search).get('instalar')==='1')setHelp(true);setAndroid(/Android/i.test(navigator.userAgent));setInstalled(window.matchMedia('(display-mode: standalone)').matches||(navigator as any).standalone===true);try{setEmbedded(window.self!==window.top||/; wv\)|FBAN|FBAV|Instagram|ChatGPT/i.test(navigator.userAgent))}catch{setEmbedded(true)}const before=(e:Event)=>{e.preventDefault();setPrompt(e)};const done=()=>{setInstalled(true);setPrompt(null);setStatus('Aplicativo instalado na tela inicial.')};window.addEventListener('beforeinstallprompt',before);window.addEventListener('appinstalled',done);if(!window.isSecureContext)setWorker('A instalação exige o link seguro HTTPS.');else if('serviceWorker' in navigator)navigator.serviceWorker.register(asset('/sw.js'),{scope:new URL(document.baseURI).pathname}).then(r=>{r.update().catch(()=>{});setWorker('Recurso de instalação preparado neste navegador.')}).catch(()=>setWorker('O navegador não ativou a instalação. Abra o link diretamente no Chrome ou Safari.'));else setWorker('Este navegador não oferece instalação automática. Use Chrome ou Safari.');return()=>{window.removeEventListener('beforeinstallprompt',before);window.removeEventListener('appinstalled',done)}},[]);
-async function install(){if(installed){setHelp(true);return}if(prompt&&!embedded){try{await prompt.prompt();const choice=await prompt.userChoice;setPrompt(null);if(choice.outcome!=='accepted'){setStatus('Instalação não concluída. Você pode tentar novamente pelo menu do navegador.');setHelp(true)}}catch{setStatus('Abra no navegador do celular e use o menu para instalar.');setHelp(true)}}else setHelp(true)}async function copy(){try{await navigator.clipboard.writeText(origin);setStatus('Link copiado. Cole na barra de endereço do Chrome ou Safari.')}catch{setStatus('Copie o endereço exibido abaixo e abra no navegador do celular.')}}
-return <>{mobile&&!installed&&!dismissed&&<aside className="installbanner" aria-label="Adicionar Pllugo ao celular"><img src={asset('/icons/pllugo-192.png')} width="44" height="44" alt=""/><div><strong>Pllugo na tela inicial</strong><small>Abra suas tarefas pelo ícone do app.</small></div><button type="button" className="primary" onClick={install}>{prompt&&!embedded?'Instalar':'Adicionar'}</button><button type="button" aria-label="Ocultar convite de instalação" className="dismissinstall" onClick={()=>{setDismissed(true);try{sessionStorage.setItem('pllugo-install-dismissed','1')}catch{}}}><X size={16}/></button></aside>}<button type="button" className="installapp" onClick={install}><Smartphone size={15}/>{installed?'App instalado':'Instalar aplicativo'}</button>{help&&<div className="installoverlay" role="dialog" aria-modal="true" aria-label="Instalar aplicativo"><section className="installbox"><button type="button" aria-label="Fechar instalação" className="closeinstall" onClick={()=>setHelp(false)}><X size={18}/></button><img src={asset('/icons/pllugo-192.png')} alt="Ícone Pllugo Operação" width="72" height="72"/><h2>Pllugo na sua tela inicial</h2><p>Tenha um ícone da Pllugo no celular e abra direto nas suas tarefas.</p>{embedded&&<div className="notice">Você está em um navegador interno. Abra o link diretamente no Chrome ou Safari para instalar.</div>}<div className="installactions">{android&&origin&&<a className="primary" href={'intent://'+origin.replace('https://','')+'#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(origin)+';end'}><ExternalLink size={16}/>Abrir no Chrome</a>}<button type="button" onClick={copy}><Copy size={16}/>Copiar link</button></div><input className="installurl" readOnly aria-label="Link do aplicativo" value={origin}/>{prompt&&!embedded?<div className="installsteps"><h3>Pronto para instalar</h3><p>Toque abaixo e confirme na janela do seu navegador.</p><button type="button" className="primary installmain" onClick={install}><Download size={18}/>Instalar Pllugo</button></div>:<div className="installsteps"><h3>{ios?'No seu iPhone ou iPad':android?'No seu Android':'Escolha seu celular'}</h3>{!ios&&<ol><li>Abra este link no <strong>Chrome</strong>.</li><li>Toque no menu <strong>⋮</strong> e em <strong>Adicionar à tela inicial</strong> ou <strong>Instalar aplicativo</strong>.</li><li>Confirme em <strong>Instalar</strong> ou <strong>Adicionar</strong>.</li></ol>}{!android&&<ol><li>Abra este link no <strong>Safari</strong>.</li><li>Toque em <strong>Compartilhar</strong> e em <strong>Adicionar à Tela de Início</strong>.</li><li>Confirme em <strong>Adicionar</strong>.</li></ol>}<p className="installtip">Depois, procure o ícone “Pllugo Operação” na tela do celular.</p></div>}{status&&<p role="status" className="installstatus">{status}</p>}<details className="installdiagnostics"><summary>Ainda não apareceu a opção?</summary><p>{worker}</p><p>Atualize o navegador, use uma janela normal e confirme que está no endereço acima. Navegadores internos e navegação anônima podem não oferecer instalação.</p><p>A instalação não substitui o login. Cada pessoa acessa somente as unidades e atividades autorizadas.</p></details><small>É necessário internet para salvar atividades e enviar fotos.</small></section></div>}</>}
+// Kept for the entire page lifetime: login/logout cannot discard the native prompt.
+const installation = createInstallController(window);
+const ua = navigator.userAgent;
+const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const android = /Android/i.test(ua);
+const mobile = ios || android;
+const embedded = /; wv\)|FBAN|FBAV|Instagram|ChatGPT/i.test(ua) || window.self !== window.top;
+if (window.isSecureContext && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register(asset('/sw.js'), {scope: new URL(document.baseURI).pathname})
+    .then(registration => registration.update()).catch(() => {});
+}
+
+export default function InstallApp({children}: {children: ReactNode}) {
+  const state = useSyncExternalStore(installation.subscribe, installation.getSnapshot);
+  if (!mobile || state.installed) return <>{children}</>;
+  const chrome = 'intent://' + new URL(document.baseURI).host + new URL(document.baseURI).pathname
+    + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='
+    + encodeURIComponent(new URL(document.baseURI).href) + ';end';
+  return <main className="mobile-install">
+    <section aria-labelledby="install-title">
+      <img src={asset('/icons/pllugo-192.png')} width="88" height="88" alt="Pllugo"/>
+      <h1 id="install-title">Pllugo no seu celular</h1>
+      <p>Instale para abrir suas tarefas pelo ícone do aplicativo.</p>
+      {embedded ? <>
+        <p>{android ? 'Abra no Chrome para instalar.' : 'Abra este link no Safari. Depois, toque em Compartilhar → Adicionar à Tela de Início.'}</p>
+        {android && <a className="primary" href={chrome}>Abrir no Chrome</a>}
+      </> : state.prompt ? <button className="primary" onClick={() => installation.install()}>Instalar</button>
+        : state.busy ? <p role="status">Confirme a instalação na janela do navegador.</p>
+        : <>
+          {state.error && <p role="status">{state.error}</p>}
+          <div className="mobile-install-step">{ios
+            ? <>Toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>.</>
+            : <>No menu <strong>⋮</strong> do navegador, toque em <strong>Adicionar à tela inicial</strong> e confirme em <strong>Instalar</strong>.</>}</div>
+          <small>Já instalou? Abra pelo ícone “Pllugo Operação” na tela inicial.</small>
+        </>}
+    </section>
+  </main>;
+}
