@@ -23,7 +23,7 @@ const database=createDatabase(client);
 // statements on error/reset/geocoding paths that the functional suite may miss.
 const apiFiles=(await readdir(join(root,'app/api'))).map(name=>`app/api/${name}/route.ts`);
 let validated=0;
-for(const file of ['lib/access.ts','lib/routines.ts',...apiFiles]){
+for(const file of ['lib/access.ts','lib/routines.ts','lib/assignment-sync.ts',...apiFiles]){
   const source=ts.createSourceFile(file,await readFile(join(root,file),'utf8'),ts.ScriptTarget.Latest,true);
   function visit(node){
     if(ts.isCallExpression(node)&&ts.isPropertyAccessExpression(node.expression)&&node.expression.name?.text==='prepare'&&node.arguments.length===1&&ts.isStringLiteral(node.arguments[0])){
@@ -63,6 +63,22 @@ suite=suite.replace('try{\nconst own=',`try{\nassert.equal((await auth.GET(req('
 suite=suite.replace('sqlite.prepare("SELECT COUNT(*) as n FROM records WHERE kind=\'task\'").get().n',
   'Number((await sqlite.pg.query("SELECT COUNT(*) as n FROM operacao.records WHERE kind=\'task\'")).rows[0].n)');
 suite=suite.replace('sqlite.close();','');
+// Simulate another writer after the route has read the revision, before its
+// transaction starts. The actual API must reject the entire assignment batch.
+suite=suite.replace("console.log('PASS: atribuição fixa via tarefa",`const assignmentBefore=await access.record(rotation.id);
+const originalBatch=sqlite.database.batch;
+let changedRevision=false;
+sqlite.database.batch=async statements=>{
+ if(!changedRevision){changedRevision=true;await sqlite.pg.query("UPDATE operacao.records SET updated=$1,body=jsonb_set(body::jsonb,'{updated}',to_jsonb($1::text))::text WHERE id=$2",['concurrent-revision',rotation.id]);}
+ return originalBatch(statements);
+};
+try{
+ const conflict=await assign.POST(req('/api/assign',{ids:[rotation.id],unit:U[0],assigneeId:a.id,mode:'fixed',from:d3},lh));
+ assert.equal(conflict.status,409);
+ assert.deepEqual((await access.record(rotation.id)).assignmentPlanByUnit,assignmentBefore.assignmentPlanByUnit);
+}finally{sqlite.database.batch=originalBatch;}
+console.log('PASS: atribuição concorrente recusada sem sobrescrever o plano existente.');
+console.log('PASS: atribuição fixa via tarefa`);
 
 const ownerToken='a'.repeat(64);
 const ownerHash=Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ownerToken))).toString('hex');

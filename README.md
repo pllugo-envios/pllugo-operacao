@@ -2,6 +2,19 @@
 
 Rotinas operacionais, tarefas, cronograma diário e evidências das unidades Pllugo.
 
+## Responsabilidades e acompanhamento
+
+As atualizações da versão 11 do app original foram adaptadas para este ambiente:
+responsabilidade fixa com início de vigência, substituição temporária inclusiva
+com retorno automático ao titular, Minhas tarefas, filtros por colaborador e
+agrupamento visual de atividades por cliente. Cada cliente continua mantendo
+suas próprias evidências e conclusão. Tarefas concluídas não são reatribuídas.
+
+O backend aplica o plano de atribuição antes de verificar acesso às tarefas e
+fotos. Alterações de plano usam uma transação PostgreSQL com bloqueio da revisão
+atual; conflitos retornam 409 para evitar sobrescrever alterações de outro acesso.
+Não houve migração ou substituição dos registros operacionais existentes.
+
 ## Publicação
 
 Interface estática no GitHub Pages, seguindo o padrão do dashboard SLA. O workflow
@@ -67,7 +80,7 @@ npm run typecheck
 npm run build
 ```
 
-Os testes executam as 41 consultas do servidor em PostgreSQL em memória e verificam
+Os testes executam as 46 consultas do servidor em PostgreSQL em memória e verificam
 os fluxos de tarefas, recorrência, permissões por usuário/unidade, atribuição,
 proteção de fotos, imutabilidade de conclusão e revogação de sessões. Também
 verificam CORS e o transporte autenticado entre Pages e Supabase.
