@@ -11,7 +11,7 @@ function landing(ua,standalone=false){
  return {nodes,redirect};
 }
 test('WhatsApp message includes named recipient and credentials but keeps them out of URLs',()=>{
- const email='fixture@example.test',password='P!fixture123';
+ const email='ana_silva+ops@example.test',password='P!fixture123';
  const message=accessMessage({name:'Ana Silva',email},password);
  assert.match(message,/Olá, \*Ana Silva\*/);assert.ok(message.includes(email));assert.ok(message.includes(password));
  assert.ok(message.includes('crie sua nova senha'));assert.ok(message.includes('Safari'));
