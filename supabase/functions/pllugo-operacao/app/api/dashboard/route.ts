@@ -1,0 +1,5 @@
+import {current,json,failure,manager,UNITS,today,HttpError} from '../../../lib/access.ts';
+import {validDay} from '../../../lib/assignment-plan.ts';
+import {unitSummary} from '../../../lib/unit-summary.ts';
+import {GET as getData} from '../data/route.ts';
+export async function GET(req:Request){try{const u=await current(req),date=new URL(req.url).searchParams.get('date')||today();if(!validDay(date))throw new HttpError(400,'Data inválida.');const allowed=u.role==='Administrador'?UNITS:u.units.filter(unit=>UNITS.includes(unit)),time=new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}),summaries=[];for(const unit of allowed){try{const url=new URL('/api/data',req.url);url.search=new URLSearchParams({unit,date}).toString();const r=await getData(new Request(url,{headers:req.headers}));if(!r.ok)throw Error();summaries.push(unitSummary(await r.json(),unit,date,today(),time));}catch{summaries.push({unit,error:'Não foi possível atualizar esta unidade.'})}}return json({date,checkedAt:new Date().toISOString(),scope:manager(u)?'unit':'personal',units:summaries});}catch(e){return failure(e)}}

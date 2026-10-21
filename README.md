@@ -2,6 +2,14 @@
 
 Rotinas operacionais, tarefas, cronograma diário e evidências das unidades Pllugo.
 
+## Atualização da versão 12
+
+Origem: Sites v12, commit 49098e2032951ba5a54f20ef3f51ee0f4f5f2cd5.
+Painel Início por unidade, menu compacto, busca de atividades e criação unificada
+para um ou dois clientes. Instruções numeradas substituem o checklist de execução;
+campos obrigatórios e evidências continuam validados pelo servidor. Criações
+repetidas são idempotentes. Mantidos instalação, Copiar acesso e atribuições v11.
+
 ## Responsabilidades e acompanhamento
 
 As atualizações da versão 11 do app original foram adaptadas para este ambiente:
@@ -80,7 +88,7 @@ npm run typecheck
 npm run build
 ```
 
-Os testes executam as 46 consultas do servidor em PostgreSQL em memória e verificam
+Os testes executam as 48 consultas do servidor em PostgreSQL em memória e verificam
 os fluxos de tarefas, recorrência, permissões por usuário/unidade, atribuição,
 proteção de fotos, imutabilidade de conclusão e revogação de sessões. Também
 verificam CORS e o transporte autenticado entre Pages e Supabase.

@@ -5,4 +5,6 @@ import * as data from './app/api/data/route.ts';
 import * as assign from './app/api/assign/route.ts';
 import * as photo from './app/api/photo/route.ts';
 import * as geocode from './app/api/geocode/route.ts';
-Deno.serve(createHandler({'/api/auth':auth,'/api/users':users,'/api/data':data,'/api/assign':assign,'/api/photo':photo,'/api/geocode':geocode}));
+import * as create from './app/api/create/route.ts';
+import * as dashboard from './app/api/dashboard/route.ts';
+Deno.serve(createHandler({'/api/create':create,'/api/dashboard':dashboard,'/api/auth':auth,'/api/users':users,'/api/data':data,'/api/assign':assign,'/api/photo':photo,'/api/geocode':geocode}));

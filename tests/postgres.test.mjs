@@ -63,6 +63,8 @@ suite=suite.replace('try{\nconst own=',`try{\nassert.equal((await auth.GET(req('
 suite=suite.replace('sqlite.prepare("SELECT COUNT(*) as n FROM records WHERE kind=\'task\'").get().n',
   'Number((await sqlite.pg.query("SELECT COUNT(*) as n FROM operacao.records WHERE kind=\'task\'")).rows[0].n)');
 suite=suite.replace('sqlite.close();','');
+suite=suite.replace(/sqlite\.prepare\(("(?:[^"\\]|\\.)*")\)\.get\(([^)]*)\)\.n/g,
+  (_,query,args)=>`Number((await sqlite.database.prepare(${query}).bind(${args}).first()).n)`);
 // Simulate another writer after the route has read the revision, before its
 // transaction starts. The actual API must reject the entire assignment batch.
 suite=suite.replace("console.log('PASS: atribuição fixa via tarefa",`const assignmentBefore=await access.record(rotation.id);
