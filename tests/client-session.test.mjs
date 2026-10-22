@@ -39,3 +39,17 @@ test('refuses unrelated network destinations',()=>fixture(async({api,calls})=>{
   await assert.rejects(api.api('https://untrusted.test/api/auth'),/inválido/);
   assert.equal(calls.length,0);
 }));
+
+test('every deployed API route passes client validation and keeps session transport',()=>fixture(async({api,calls})=>{
+  const routes=await readFile(new URL('../supabase/functions/pllugo-operacao/index.ts',import.meta.url),'utf8');
+  const paths=[...routes.matchAll(/["'](\/api\/[a-z]+)["']\s*:/g)].map(match=>match[1]);
+  assert.ok(paths.includes('/api/dashboard'));assert.ok(paths.includes('/api/create'));
+  await api.api('/api/auth',{method:'POST'});
+  for(const path of paths){
+    await api.api(path+'?date=2026-10-21',{method:path==='/api/create'?'POST':'GET'});
+    const call=calls.at(-1);
+    assert.equal(call.url,'https://dfaoyjlzxnbephvcgkfz.supabase.co/functions/v1/pllugo-operacao'+path+'?date=2026-10-21');
+    assert.equal(call.options.headers.get('authorization'),'Bearer '+'a'.repeat(64));
+  }
+  for(const path of ['/api/dashboard/extra','/api/createevil','//untrusted.test/api/data'])await assert.rejects(api.api(path),/inválido/);
+}));
