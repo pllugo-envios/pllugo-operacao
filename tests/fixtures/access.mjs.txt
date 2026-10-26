@@ -98,6 +98,15 @@ assert.equal(copiedTask.client,'J&T');assert.equal(copiedTask.title,'Devolução
 assert.equal((await success(await edit.POST(req('/api/edit',copySettings,lh)))).created,0);
 assert.equal((await edit.POST(req('/api/edit',{...copySettings,clients:[]},lh))).status,400);
 assert.equal((await edit.POST(req('/api/edit',{...copySettings,clients:['Outro']},lh))).status,400);
+
+const futureCopyDay=new Date(Date.parse(day+'T12:00:00Z')+86400000).toISOString().slice(0,10);
+await success(await edit.POST(req('/api/edit',{...copiedTask,ids:[copiedId],clients:['J&T'],title:'Devolução J&T independente',startDate:futureCopyDay,recurrence:'daily',active:true,time:'05:00'},lh)));
+assert.deepEqual(await access.record(originalCopy.id),originalCopy);
+assert.equal(routines.scheduled(await access.record(copiedId),day),false);
+await routines.materialize(U[0],day);assert.equal(await access.record(routines.dailyId(copiedId,U[0],day)),null);
+await routines.materialize(U[0],futureCopyDay);const futureCopyTask=await access.record(routines.dailyId(copiedId,U[0],futureCopyDay));assert.equal(futureCopyTask.client,'J&T');assert.equal(futureCopyTask.title,'Devolução J&T independente');assert.equal(futureCopyTask.time,'05:00');
+console.log('PASS: cópia editável independentemente e execução gerada somente a partir da vigência configurada.');
+
 console.log('PASS: cópia iMile para J&T pela edição, cliente original intacto, requisitos e responsável copiados, repetição sem duplicata.');
 
 console.log('PASS: edição conjunta dos clientes, atribuição fixa comum, permissões por unidade e histórico concluído preservado.');
