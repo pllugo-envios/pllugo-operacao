@@ -105,6 +105,21 @@ assert.deepEqual(await access.record(originalCopy.id),originalCopy);
 assert.equal(routines.scheduled(await access.record(copiedId),day),false);
 await routines.materialize(U[0],day);assert.equal(await access.record(routines.dailyId(copiedId,U[0],day)),null);
 await routines.materialize(U[0],futureCopyDay);const futureCopyTask=await access.record(routines.dailyId(copiedId,U[0],futureCopyDay));assert.equal(futureCopyTask.client,'J&T');assert.equal(futureCopyTask.title,'Devolução J&T independente');assert.equal(futureCopyTask.time,'05:00');
+
+const syncPast=new Date(Date.parse(day+'T12:00:00Z')-86400000).toISOString().slice(0,10),syncFuture=new Date(Date.parse(day+'T12:00:00Z')+2*86400000).toISOString().slice(0,10),syncDoneDay=new Date(Date.parse(day+'T12:00:00Z')+3*86400000).toISOString().slice(0,10);
+const syncCreated=await success(await creation.POST(req('/api/create',{...batch,id:'sync-config-routine-123456',clients:['iMile'],title:'Registro de avaria',startDate:syncPast,active:true},lh)));
+const syncTemplate=await access.record(syncCreated.ids[0]);for(const d of [syncPast,day,syncFuture,syncDoneDay])await routines.materialize(U[0],d);
+const syncTodayId=routines.dailyId(syncTemplate.id,U[0],day),syncPastId=routines.dailyId(syncTemplate.id,U[0],syncPast),syncDoneId=routines.dailyId(syncTemplate.id,U[0],syncDoneDay);
+await access.put({...await access.record(syncTodayId),answers:{Resultado:'Resposta preservada'},photos:['evidence/fixture-preserved'],orders:[{code:'EXEMPLO',status:'awaiting'}]});
+const syncPastBefore=await access.record(syncPastId);await access.put({...await access.record(syncDoneId),status:'done'});const syncDoneBefore=await access.record(syncDoneId);
+await success(await edit.POST(req('/api/edit',{...syncTemplate,ids:[syncTemplate.id],clients:['iMile'],title:'Registro de Avaria - MANHÃ',time:'06:30',fields:['Resultado','Novo campo'],minPhotos:2,description:'Nova instrução',activities:[{id:'step',title:'Conferir volumes'}],photoInstructions:['Volume','Etiqueta']},lh)));
+const syncListed=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:day}),null,lh))),syncToday=syncListed.find(t=>t.id===syncTodayId);
+assert.equal(syncToday.title,'Registro de Avaria - MANHÃ');assert.equal(syncToday.time,'06:30');assert.equal(syncToday.description,'Nova instrução');assert.equal(syncToday.minPhotos,2);assert.deepEqual(syncToday.fields,['Resultado','Novo campo']);assert.deepEqual(syncToday.answers,{Resultado:'Resposta preservada'});assert.deepEqual(syncToday.photos,['evidence/fixture-preserved']);assert.deepEqual(syncToday.orders,[{code:'EXEMPLO',status:'awaiting'}]);
+const syncAgain=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:day}),null,lh)));assert.equal(syncAgain.find(t=>t.id===syncTodayId).updated,syncToday.updated);
+const syncFutureList=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:syncFuture}),null,lh)));assert.equal(syncFutureList.find(t=>t.templateId===syncTemplate.id).title,'Registro de Avaria - MANHÃ');
+await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:syncPast}),null,lh));await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:syncDoneDay}),null,lh));assert.deepEqual(await access.record(syncPastId),syncPastBefore);assert.deepEqual(await access.record(syncDoneId),syncDoneBefore);
+console.log('PASS: configurações editadas refletem nas tarefas abertas atuais/futuras, sem apagar respostas/fotos nem alterar tarefas passadas ou concluídas; sincronização idempotente.');
+
 console.log('PASS: cópia editável independentemente e execução gerada somente a partir da vigência configurada.');
 
 console.log('PASS: cópia iMile para J&T pela edição, cliente original intacto, requisitos e responsável copiados, repetição sem duplicata.');
