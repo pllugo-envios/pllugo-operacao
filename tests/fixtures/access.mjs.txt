@@ -86,6 +86,20 @@ assert.equal((await edit.POST(req('/api/edit',{...pendingBefore,ids:once.ids,fie
 assert.deepEqual(await access.record(once.ids[0]),editCompletedBefore);assert.deepEqual(await access.record(once.ids[1]),pendingBefore);
 await success(await edit.POST(req('/api/edit',{...pendingBefore,ids:[pendingBefore.id],title:'Avulsa revisada',fields:['Novo campo'],changeAssignment:true,assignmentUnit:U[0],editAssigneeId:b.id},lh)));
 const pendingAfter=await access.record(pendingBefore.id);assert.equal(pendingAfter.title,'Avulsa revisada');assert.deepEqual(pendingAfter.fields,['Novo campo']);assert.equal(pendingAfter.assigneeId,b.id);assert.deepEqual(pendingAfter.photos,pendingBefore.photos);
+
+const singleCopy=await success(await creation.POST(req('/api/create',{...batch,id:'copy-client-routine-123456',clients:['iMile'],active:false},lh)));
+const originalCopy=await access.record(singleCopy.ids[0]);
+const copySettings={...originalCopy,ids:singleCopy.ids,clients:['J&T'],title:'Devolução compartilhada',active:false,changeAssignment:true,assignmentUnit:U[0],editAssigneeId:a.id};
+assert.equal((await edit.POST(req('/api/edit',copySettings,ah))).status,403);
+const copiedResult=await success(await edit.POST(req('/api/edit',copySettings,lh)));assert.equal(copiedResult.created,1);assert.equal(copiedResult.count,1);
+assert.deepEqual(await access.record(originalCopy.id),originalCopy);
+const copiedId='client-copy:'+originalCopy.id+':jt',copiedTask=await access.record(copiedId);
+assert.equal(copiedTask.client,'J&T');assert.equal(copiedTask.title,'Devolução compartilhada');assert.equal(copiedTask.active,false);assert.deepEqual(copiedTask.days,originalCopy.days);assert.deepEqual(copiedTask.fields,originalCopy.fields);assert.equal(copiedTask.assigneeByUnit[U[0]],a.id);assert.deepEqual(copiedTask.photos,[]);assert.deepEqual(copiedTask.answers,{});
+assert.equal((await success(await edit.POST(req('/api/edit',copySettings,lh)))).created,0);
+assert.equal((await edit.POST(req('/api/edit',{...copySettings,clients:[]},lh))).status,400);
+assert.equal((await edit.POST(req('/api/edit',{...copySettings,clients:['Outro']},lh))).status,400);
+console.log('PASS: cópia iMile para J&T pela edição, cliente original intacto, requisitos e responsável copiados, repetição sem duplicata.');
+
 console.log('PASS: edição conjunta dos clientes, atribuição fixa comum, permissões por unidade e histórico concluído preservado.');
 
 console.log('PASS: criação simultânea para dois clientes, repetição sem duplicatas, tarefa única e rotina, conclusão sem caixa de confirmação com campos exigidos, painel de todas as unidades para admin, gestão restrita à unidade, operacional somente próprias tarefas e busca aproximada.');
