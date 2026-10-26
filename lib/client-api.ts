@@ -20,7 +20,7 @@ export function setRememberSession(value:boolean){load();remember=value;save(ses
 export function isRemembered(){load();return remember}
 export function asset(path:string){return new URL(path.replace(/^\//,''),document.baseURI).href}
 export async function api(path:string,options:RequestInit={}){
-  if(!/^\/api\/(auth|data|users|assign|photo|geocode|dashboard|create)(\?|$)/.test(path))throw Error('Endereço de serviço inválido.');
+  if(!/^\/api\/(auth|data|users|assign|photo|geocode|dashboard|create|edit)(\?|$)/.test(path))throw Error('Endereço de serviço inválido.');
   load();
   const headers=new Headers(options.headers);
   if(session)headers.set('Authorization',`Bearer ${session}`);

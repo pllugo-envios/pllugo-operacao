@@ -1,3 +1,4 @@
+import * as edit from './app/api/edit/route.ts';
 import {createHandler} from './handler.ts';
 import * as auth from './app/api/auth/route.ts';
 import * as users from './app/api/users/route.ts';
@@ -7,4 +8,4 @@ import * as photo from './app/api/photo/route.ts';
 import * as geocode from './app/api/geocode/route.ts';
 import * as create from './app/api/create/route.ts';
 import * as dashboard from './app/api/dashboard/route.ts';
-Deno.serve(createHandler({'/api/create':create,'/api/dashboard':dashboard,'/api/auth':auth,'/api/users':users,'/api/data':data,'/api/assign':assign,'/api/photo':photo,'/api/geocode':geocode}));
+Deno.serve(createHandler({'/api/edit':edit,'/api/create':create,'/api/dashboard':dashboard,'/api/auth':auth,'/api/users':users,'/api/data':data,'/api/assign':assign,'/api/photo':photo,'/api/geocode':geocode}));
