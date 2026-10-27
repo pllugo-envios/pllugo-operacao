@@ -149,6 +149,20 @@ const afterDeleteList=await success(await data.GET(req('/api/data?'+new URLSearc
 const removedPending=await access.record(deleteTodayId);assert.equal(removedPending.deleted,true);assert.equal(removedPending.deletedWithTemplate,deleteGroup.ids[0]);assert.deepEqual(removedPending.answers,{Resultado:'Preservado'});assert.deepEqual(removedPending.photos,['evidence/preserved-deletion']);assert.equal((await data.POST(req('/api/data',{...removedPending,status:'pending'},lh))).status,403);
 const afterDeleteFuture=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:flowNext}),null,lh)));assert.ok(!afterDeleteFuture.some(t=>t.id===deleteFutureId));
 const deletionSummary=(await load('lib/unit-summary.ts')).unitSummary(afterDeleteList,U[0],day,day,'00:00');assert.equal(deletionSummary.total,afterDeleteList.filter(t=>t.kind==='task').length);
+
+const driverReg='driver-registry-test',driverChild='driver-treatment-test';
+await access.put({...batch,id:driverReg,kind:'template',client:'iMile',title:'Pendências de Motoristas',units:[U[0]],startDate:day,special:'registry',registryCountField:'Total de pedidos com pendências',fields:['Total de pedidos com pendências'],active:true});
+await access.put({...batch,id:driverChild,kind:'template',client:'iMile',title:'Cobrar pendencias de motoristas',units:[U[0]],startDate:day,fields:[],active:true});await routines.materialize(U[0],day);
+const driverTemplate=await access.record(driverChild);await access.put({...driverTemplate,special:'treatment',parentTemplateId:driverReg});
+const driverList=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:day}),null,lh)));const driverRegister=driverList.find(t=>t.templateId===driverReg),driverTreatment=driverList.find(t=>t.templateId===driverChild);assert.equal(driverTreatment.special,'treatment');assert.equal(driverTreatment.parentTemplateId,driverReg);
+assert.equal((await data.POST(req('/api/data',{...driverRegister,status:'done',answers:{'Total de pedidos com pendências':'2'},orders:[{code:'MOT-001'}]},lh))).status,400);
+await success(await data.POST(req('/api/data',{...driverRegister,status:'done',answers:{'Total de pedidos com pendências':'1'},orders:[{code:'MOT-001'}]},lh)));
+const driverReady=await routines.syncTreatment(await access.record(driverTreatment.id));assert.deepEqual(driverReady.orders.map(o=>o.code),['MOT-001']);assert.equal(driverReady.parentDone,true);
+await success(await data.POST(req('/api/data',{...driverReady,status:'done',orders:[{code:'MOT-001',status:'pending'}]},lh)));
+const driverNext=(await load('lib/order-status.ts')).nextOrderDay(day);const driverTomorrow=await routines.syncTreatment(await access.record(routines.dailyId(driverChild,U[0],driverNext)));assert.deepEqual(driverTomorrow.orders.map(o=>o.code),['MOT-001']);
+const unrelatedTemplate=initial.find(t=>t.kind==='template'&&t.special==='treatment'&&t.client==='iMile');assert.ok(!(await routines.pendingOrders(unrelatedTemplate.id,U[0],'iMile',driverNext)).some(o=>o.code==='MOT-001'));
+console.log('PASS: cadastro de pendências de motoristas usa total próprio e alimenta somente cobrança vinculada, incluindo ocorrências abertas e transporte para o próximo dia.');
+
 console.log('PASS: exclusão da rotina remove tarefas abertas atuais/futuras do painel, bloqueia edição, preserva concluídas, evidências e o outro cliente.');
 
 console.log('PASS: vínculo automático por cliente/unidade, quatro status, ticket de extravio, conclusão com pendências, transporte no dia seguinte fora da periodicidade, sem duplicar nem reabrir entregues.');

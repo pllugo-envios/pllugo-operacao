@@ -6,7 +6,7 @@ export async function syncAssignment(task:any,provided?:any){
  if(source.deleted)return putOpen({...task,deleted:true,deletedAt:source.deletedAt||new Date().toISOString(),deletedBy:source.deletedBy,deletedWithTemplate:source.id});
  let next={...task},changed=false;
  if(task.templateId&&task.date>=today()&&task.date>=(source.startDate||'0000-00-00')){
-  for(const key of ['title','description','category','time','fields','minPhotos','activities','photoInstructions','order','active','recurrence','days','startDate','originalDetail']){
+  for(const key of ['title','description','category','time','fields','minPhotos','activities','photoInstructions','order','active','recurrence','days','startDate','originalDetail','special','parentTemplateId','registryCountField']){
    if(JSON.stringify(task[key])!==JSON.stringify(source[key])){changed=true;if(source[key]===undefined)delete next[key];else next[key]=source[key];}
   }
   if(changed)next.history=[...(task.history||[]),{at:new Date().toISOString(),actor:'Sistema',action:'Atualizou configuração da rotina'}];
