@@ -138,6 +138,19 @@ for(const client of ['J&T','iMile']){
  assert.deepEqual(await access.record(rt.id),finished);
  assert.deepEqual(await routines.pendingOrders(treatId,U[1],client,flowNext),[]);assert.deepEqual(await routines.pendingOrders(treatId,U[0],client==='J&T'?'iMile':'J&T',flowNext),[]);
 }
+
+const deleteGroup=await success(await creation.POST(req('/api/create',{...batch,id:'delete-parent-routine-123456',title:'Total Expedido exclusão teste',active:true,startDate:day},lh)));
+await routines.materialize(U[0],day);await routines.materialize(U[0],flowNext);
+const deleteTodayId=routines.dailyId(deleteGroup.ids[0],U[0],day),deleteFutureId=routines.dailyId(deleteGroup.ids[0],U[0],flowNext),keepClientId=routines.dailyId(deleteGroup.ids[1],U[0],day);
+const beforeDeleteTask=await access.record(deleteTodayId);await access.put({...beforeDeleteTask,answers:{Resultado:'Preservado'},photos:['evidence/preserved-deletion']});
+const doneDeletionId='delete-parent-completed-test';await access.put({...beforeDeleteTask,id:doneDeletionId,status:'done'});const doneDeletionBefore=await access.record(doneDeletionId),keepClientBefore=await access.record(keepClientId);
+await success(await data.DELETE(req('/api/data?id='+encodeURIComponent(deleteGroup.ids[0]),null,lh,'DELETE')));
+const afterDeleteList=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:day}),null,lh)));assert.ok(!afterDeleteList.some(t=>t.id===deleteTodayId));assert.ok(afterDeleteList.some(t=>t.id===doneDeletionId));assert.deepEqual(await access.record(doneDeletionId),doneDeletionBefore);assert.deepEqual(await access.record(keepClientId),keepClientBefore);
+const removedPending=await access.record(deleteTodayId);assert.equal(removedPending.deleted,true);assert.equal(removedPending.deletedWithTemplate,deleteGroup.ids[0]);assert.deepEqual(removedPending.answers,{Resultado:'Preservado'});assert.deepEqual(removedPending.photos,['evidence/preserved-deletion']);assert.equal((await data.POST(req('/api/data',{...removedPending,status:'pending'},lh))).status,403);
+const afterDeleteFuture=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:flowNext}),null,lh)));assert.ok(!afterDeleteFuture.some(t=>t.id===deleteFutureId));
+const deletionSummary=(await load('lib/unit-summary.ts')).unitSummary(afterDeleteList,U[0],day,day,'00:00');assert.equal(deletionSummary.total,afterDeleteList.filter(t=>t.kind==='task').length);
+console.log('PASS: exclusão da rotina remove tarefas abertas atuais/futuras do painel, bloqueia edição, preserva concluídas, evidências e o outro cliente.');
+
 console.log('PASS: vínculo automático por cliente/unidade, quatro status, ticket de extravio, conclusão com pendências, transporte no dia seguinte fora da periodicidade, sem duplicar nem reabrir entregues.');
 
 console.log('PASS: configurações editadas refletem nas tarefas abertas atuais/futuras, sem apagar respostas/fotos nem alterar tarefas passadas ou concluídas; sincronização idempotente.');

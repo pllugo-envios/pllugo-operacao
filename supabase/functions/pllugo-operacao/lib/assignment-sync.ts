@@ -2,7 +2,8 @@ import {db,record,putOpen,today} from './access.ts';
 import {assignmentAt} from './assignment-plan.ts';
 export async function syncAssignment(task:any,provided?:any){
  if(task.kind!=='task'||task.status==='done'||task.deleted)return task;
- const source=task.templateId?(provided||await record(task.templateId)):task;if(!source||source.deleted)return task;
+ const source=task.templateId?(provided||await record(task.templateId)):task;if(!source)return task;
+ if(source.deleted)return putOpen({...task,deleted:true,deletedAt:source.deletedAt||new Date().toISOString(),deletedBy:source.deletedBy,deletedWithTemplate:source.id});
  let next={...task},changed=false;
  if(task.templateId&&task.date>=today()&&task.date>=(source.startDate||'0000-00-00')){
   for(const key of ['title','description','category','time','fields','minPhotos','activities','photoInstructions','order','active','recurrence','days','startDate','originalDetail']){
