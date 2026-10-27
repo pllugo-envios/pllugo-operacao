@@ -161,6 +161,20 @@ const driverReady=await routines.syncTreatment(await access.record(driverTreatme
 await success(await data.POST(req('/api/data',{...driverReady,status:'done',orders:[{code:'MOT-001',status:'pending'}]},lh)));
 const driverNext=(await load('lib/order-status.ts')).nextOrderDay(day);const driverTomorrow=await routines.syncTreatment(await access.record(routines.dailyId(driverChild,U[0],driverNext)));assert.deepEqual(driverTomorrow.orders.map(o=>o.code),['MOT-001']);
 const unrelatedTemplate=initial.find(t=>t.kind==='template'&&t.special==='treatment'&&t.client==='iMile');assert.ok(!(await routines.pendingOrders(unrelatedTemplate.id,U[0],'iMile',driverNext)).some(o=>o.code==='MOT-001'));
+
+const correctionCreated=await success(await creation.POST(req('/api/create',{...batch,id:'completed-correction-test-123456',clients:['J&T'],recurrence:'once',unit:U[0],date:day,assigneeId:a.id,fields:['Resultado'],minPhotos:0},lh)));
+const correctionInitial=await access.record(correctionCreated.ids[0]);const correctionDone=await success(await data.POST(req('/api/data',{...correctionInitial,status:'done',answers:{Resultado:'Original'},photos:[]},ah)));
+const otherOperator=await create('OutroOperadorCorrecao','Assistente',U[0]),otherOperatorHeaders=await change(await login(otherOperator.email,otherOperator.temporary),'Teste-Forte-Outro-Correcao-123!');
+assert.equal((await data.POST(req('/api/data',{...correctionDone,amendment:true,answers:{Resultado:'Inválido'}},otherOperatorHeaders))).status,403);
+assert.equal((await data.POST(req('/api/data',{...correctionDone,amendment:true,status:'pending'},ah))).status,409);
+assert.equal((await data.POST(req('/api/data',{...correctionDone,amendment:true,answers:{Resultado:''}},ah))).status,400);
+const correctionPhotoForm=new FormData();correctionPhotoForm.append('taskId',correctionDone.id);correctionPhotoForm.append('file',new Blob([await readFile('public/icons/pllugo-192.png')],{type:'image/png'}),'correction.png');const correctionPhoto=await success(await photo.POST(new Request('https://app.example.test/api/photo',{method:'POST',headers:ah,body:correctionPhotoForm})));
+const corrected=await success(await data.POST(req('/api/data',{...correctionDone,amendment:true,actor:'forged',completedAt:'2000-01-01',answers:{Resultado:'Corrigido'},photos:[correctionPhoto.key]},ah)));
+assert.equal(corrected.status,'done');assert.equal(corrected.completedAt,correctionDone.completedAt);assert.equal(corrected.actor,correctionDone.actor);assert.equal(corrected.actorId,correctionDone.actorId);assert.equal(corrected.lastEditedBy,a.id);assert.equal(corrected.answers.Resultado,'Corrigido');assert.deepEqual(corrected.photos,[correctionPhoto.key]);assert.equal(corrected.history.at(-1).action,'Corrigiu conclusão');assert.deepEqual(corrected.history.at(-1).before.answers,{Resultado:'Original'});assert.deepEqual(corrected.history.at(-1).before.photos,[]);assert.equal(corrected.history.length,correctionDone.history.length+1);
+assert.equal((await data.POST(req('/api/data',{...correctionDone,amendment:true,answers:{Resultado:'Versão antiga'}},ah))).status,409);
+const managerCorrection=await success(await data.POST(req('/api/data',{...corrected,amendment:true,answers:{Resultado:'Correção gestão'}},lh)));assert.equal(managerCorrection.actor,correctionDone.actor);assert.equal(managerCorrection.lastEditedBy,lead.id);assert.deepEqual(managerCorrection.history.at(-1).before.photos,[correctionPhoto.key]);assert.equal(managerCorrection.completedAt,correctionDone.completedAt);
+console.log('PASS: correção de conclusão pelo responsável/gestão, evidências novas, versão anterior auditável, data/autor originais preservados, bloqueio de terceiros e versões desatualizadas.');
+
 console.log('PASS: cadastro de pendências de motoristas usa total próprio e alimenta somente cobrança vinculada, incluindo ocorrências abertas e transporte para o próximo dia.');
 
 console.log('PASS: exclusão da rotina remove tarefas abertas atuais/futuras do painel, bloqueia edição, preserva concluídas, evidências e o outro cliente.');

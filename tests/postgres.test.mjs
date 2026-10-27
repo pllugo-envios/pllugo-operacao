@@ -56,7 +56,7 @@ if(edgeMode){
   suite=suite.replace(JSON.stringify("import source from './source-routines.json';"),JSON.stringify("import source from './source-routines.json' with {type:'json'};"));
   suite=suite.replace("dirname(file),p).slice", "dirname(file),p.replace(/\\.ts$/,'')).slice");
   suite=suite.replace("PLLUGO_OWNER_EMAIL:'owner@example.test',DB:","verifyPassword:async()=>false,PLLUGO_OWNER_EMAIL:'owner@example.test',DB:");
-  suite=suite.replace("await readFile('public/icons/pllugo-192.png')",`await readFile(${JSON.stringify(resolve('public/icons/pllugo-192.png'))})`);
+  suite=suite.replaceAll("await readFile('public/icons/pllugo-192.png')",`await readFile(${JSON.stringify(resolve('public/icons/pllugo-192.png'))})`);
 }
 suite=suite.replace("owner={'oai-authenticated-user-email':'owner@example.test'}", "owner={cookie:'pllugo_session='+sqlite.ownerToken}");
 suite=suite.replace('try{\nconst own=',`try{\nassert.equal((await auth.GET(req('/api/auth',null,{'oai-authenticated-user-email':'owner@example.test'}))).status,401);\nconst own=`);
