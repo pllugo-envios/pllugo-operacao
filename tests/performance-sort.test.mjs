@@ -11,3 +11,14 @@ test('all four metrics support both directions; missing metrics stay last',()=>{
  for(const [key,[desc,asc]] of Object.entries(expected)){assert.deepEqual(sortPerformance(rows,key,'desc').map(r=>r.id),desc);assert.deepEqual(sortPerformance(rows,key,'asc').map(r=>r.id),asc)}
  const ties=[row('José',3,1,1,1,1),row('Ana',3,1,1,1,1)];assert.deepEqual(sortPerformance(ties).map(r=>r.id),['Ana','José']);
 });
+
+test('completion ties consider completed volume and done ties consider assigned workload in both directions',()=>{
+ const workload=[row('A',10,5,0,5,5),row('B',5,5,0,5,5),row('C',20,10,0,10,10),row('Z',0,0,0,0,0)];
+ assert.deepEqual(sortPerformance(workload,'done','desc').map(r=>r.id),['C','B','A','Z']);
+ assert.deepEqual(sortPerformance(workload,'done','asc').map(r=>r.id),['A','B','C','Z']);
+ assert.deepEqual(sortPerformance(workload,'completion','desc').map(r=>r.id),['B','C','A','Z']);
+ assert.deepEqual(sortPerformance(workload,'completion','asc').map(r=>r.id),['A','C','B','Z']);
+ const pending=[row('A',2,0,0,0,0),row('B',8,0,0,0,0)];
+ assert.deepEqual(sortPerformance(pending,'done','desc').map(r=>r.id),['B','A']);
+ assert.deepEqual(sortPerformance(pending,'done','asc').map(r=>r.id),['A','B']);
+});
