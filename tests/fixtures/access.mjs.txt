@@ -117,17 +117,17 @@ const syncListed=await success(await data.GET(req('/api/data?'+new URLSearchPara
 assert.equal(syncToday.title,'Registro de Avaria - MANHÃ');assert.equal(syncToday.time,'06:30');assert.equal(syncToday.description,'Nova instrução');assert.equal(syncToday.minPhotos,2);assert.deepEqual(syncToday.fields,['Resultado','Novo campo']);assert.deepEqual(syncToday.answers,{Resultado:'Resposta preservada'});assert.deepEqual(syncToday.photos,['evidence/fixture-preserved']);assert.deepEqual(syncToday.orders,[{code:'EXEMPLO',status:'awaiting'}]);
 const syncAgain=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:day}),null,lh)));assert.equal(syncAgain.find(t=>t.id===syncTodayId).updated,syncToday.updated);
 const syncFutureList=await success(await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:syncFuture}),null,lh)));assert.equal(syncFutureList.find(t=>t.templateId===syncTemplate.id).title,'Registro de Avaria - MANHÃ');
-await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:syncPast}),null,lh));await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:syncDoneDay}),null,lh));assert.deepEqual(await access.record(syncPastId),syncPastBefore);assert.deepEqual(await access.record(syncDoneId),syncDoneBefore);
+await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:syncPast}),null,lh));await data.GET(req('/api/data?'+new URLSearchParams({unit:U[0],date:syncDoneDay}),null,lh));const syncedPast=await access.record(syncPastId);assert.equal(syncedPast.title,'Registro de Avaria - MANHÃ');assert.deepEqual(syncedPast.fields,['Resultado','Novo campo']);assert.equal(syncedPast.date,syncPastBefore.date);assert.equal(syncedPast.assigneeId,syncPastBefore.assigneeId);assert.deepEqual(await access.record(syncDoneId),syncDoneBefore);
 
 const flowDate=new Date(Date.parse(day+'T12:00:00Z')+10*86400000).toISOString().slice(0,10),flowNext=new Date(Date.parse(flowDate+'T12:00:00Z')+86400000).toISOString().slice(0,10),flowThird=new Date(Date.parse(flowNext+'T12:00:00Z')+86400000).toISOString().slice(0,10);
 for(const client of ['J&T','iMile']){
  const marker=client==='J&T'?'jt':'imile',regId='flow-reg-'+marker,treatId='flow-treat-'+marker;
- await access.put({...batch,id:regId,kind:'template',client,title:'Registro fluxo '+marker,units:[U[0]],startDate:flowDate,special:'registry',recurrence:'daily',fields:['Total de pedidos não localizados'],active:true});
+ await access.put({...batch,id:regId,kind:'template',client,title:'Registro fluxo '+marker,units:[U[0]],startDate:flowDate,special:'registry',recurrence:'daily',fields:['Total de pedidos não localizados','ID dos pedidos'],active:true});
  await access.put({...batch,id:treatId,kind:'template',client,title:'Tratativa fluxo '+marker,units:[U[0]],startDate:flowDate,special:'treatment',parentTemplateId:regId,recurrence:'weekdays',days:[new Date(flowDate+'T12:00:00Z').getUTCDay()],fields:[],active:true});
  await routines.materialize(U[0],flowDate);
  const rp=await access.record(routines.dailyId(regId,U[0],flowDate)),rt=await access.record(routines.dailyId(treatId,U[0],flowDate));
  const codes=['PENDENTE-'+marker,'MOTORISTA-'+marker,'ENTREGUE-'+marker,'EXTRAVIO-'+marker];
- await success(await data.POST(req('/api/data',{...rp,status:'done',orders:codes.map(code=>({code})),answers:{'Total de pedidos não localizados':'4'},photos:[]},lh)));
+ const savedRegistry=await success(await data.POST(req('/api/data',{...rp,status:'done',orders:client==='J&T'?[]:codes.map(code=>({code})),answers:{'Total de pedidos não localizados':'4',...(client==='J&T'?{'ID dos pedidos':codes.join('\n')}:{})},photos:[]},lh)));assert.equal(savedRegistry.answers['ID dos pedidos'],codes.join('\n'));
  let ready=await routines.syncTreatment(await access.record(rt.id));assert.deepEqual(ready.orders.map(o=>o.code),codes);assert.equal(ready.parentDone,true);
  assert.equal((await data.POST(req('/api/data',{...ready,status:'done',orders:codes.map((code,i)=>({code,status:['pending','assigned','delivered','loss'][i],note:''}))},lh))).status,400);
  const finished=await success(await data.POST(req('/api/data',{...ready,status:'done',orders:codes.map((code,i)=>({code,status:['pending','assigned','delivered','loss'][i],note:i===3?'Ticket TESTE':''}))},lh)));assert.equal(finished.status,'done');
@@ -137,6 +137,7 @@ for(const client of ['J&T','iMile']){
  assert.deepEqual(await routines.pendingOrders(treatId,U[0],client,flowThird),[]);assert.equal(await access.record(routines.dailyId(treatId,U[0],flowThird)),null);
  assert.deepEqual(await access.record(rt.id),finished);
  assert.deepEqual(await routines.pendingOrders(treatId,U[1],client,flowNext),[]);assert.deepEqual(await routines.pendingOrders(treatId,U[0],client==='J&T'?'iMile':'J&T',flowNext),[]);
+ await routines.materialize(U[0],flowThird,regId);const emptyRegistry=await access.record(routines.dailyId(regId,U[0],flowThird));const zero=await success(await data.POST(req('/api/data',{...emptyRegistry,status:'done',orders:[],answers:{'Total de pedidos não localizados':'0','ID dos pedidos':''},photos:[]},lh)));assert.deepEqual(zero.orders,[]);
 }
 
 const deleteGroup=await success(await creation.POST(req('/api/create',{...batch,id:'delete-parent-routine-123456',title:'Total Expedido exclusão teste',active:true,startDate:day},lh)));
@@ -189,7 +190,7 @@ console.log('PASS: exclusão da rotina remove tarefas abertas atuais/futuras do 
 
 console.log('PASS: vínculo automático por cliente/unidade, quatro status, ticket de extravio, conclusão com pendências, transporte no dia seguinte fora da periodicidade, sem duplicar nem reabrir entregues.');
 
-console.log('PASS: configurações editadas refletem nas tarefas abertas atuais/futuras, sem apagar respostas/fotos nem alterar tarefas passadas ou concluídas; sincronização idempotente.');
+console.log('PASS: configurações editadas refletem nas tarefas abertas atuais/futuras, sem apagar respostas/fotos incluindo pendências passadas sem alterar concluídas; sincronização idempotente.');
 
 console.log('PASS: cópia editável independentemente e execução gerada somente a partir da vigência configurada.');
 
