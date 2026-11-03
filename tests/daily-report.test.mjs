@@ -16,3 +16,10 @@ test('external carriers receive only required areas; Pllugo retains all organiza
  for(const client of ['J&T','iMile','Anjun'])assert.deepEqual(baseReport(rows,unit,date,client,date,'12:00').photos.map(p=>p.key),['photo0','photo1','photo2']);
  assert.equal(baseReport(rows,unit,date,'Pllugo',date,'12:00').photos.length,6);assert.equal(baseReport(rows,unit,date,'Todos',date,'12:00').photos.length,6);
 });
+
+test('photos follow corridors, back area, receiving and returns, preserving order within each area',()=>{
+ const unit='Mauá • Unidade 1',date='2026-11-03';
+ const rows=[['RETORNOS',['return'],[]],['AREA EXTERNA',['extra'],[]],['FUNDOS',['back'],[]],['CORREDORES',['corridor1','corridor2'],[]],['AREA DE RECEBIMENTO E RETORNOS',['combinedReturn','receiving'],['Foto dos retornos','Foto do recebimento']]].map(([area,photos,photoInstructions],i)=>({kind:'task',id:String(i),unit,date,status:'done',client:'Pllugo',title:'ORGANIZAÇÃO - '+area,photos,photoInstructions}));
+ assert.deepEqual(baseReport(rows,unit,date,'Anjun',date,'12:00').photos.map(p=>p.key),['corridor1','corridor2','back','receiving','return','combinedReturn']);
+ assert.equal(baseReport(rows,unit,date,'Pllugo',date,'12:00').photos.at(-1).key,'extra');
+});
