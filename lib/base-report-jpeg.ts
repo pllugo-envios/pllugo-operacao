@@ -1,6 +1,8 @@
+import {downloadSummaryReport} from './summary-report-jpeg';
 import {asset,api} from './client-api';
 import {clientLogo} from './clients';
 export async function downloadBaseReport(report:any){
+ if(report.mode==='management'||report.mode==='organization')return downloadSummaryReport(report);
  const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d')!;const width=1200,margin=60,gap=24;let y=175;const cards:any[]=[],photos:any[]=[];
  const wrap=(text:string,max:number,size=19,bold=false)=>{ctx.font=`${bold?'600 ':''}${size}px Arial`;const lines:string[]=[];for(const paragraph of String(text).split('\n')){let line='';for(const word of paragraph.split(/\s+/)){if(ctx.measureText(line+word).width>max&&line){lines.push(line.trim());line=''}line+=word+' '}lines.push(line.trim())}return lines};
  const single=report.standard.length===1,cardWidth=single?1080:528;
