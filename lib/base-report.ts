@@ -17,6 +17,7 @@ export function baseReport(records:any[],unit:string,date:string,client:string,t
  const orgAreas=[['Fundos',/fundos/],['Corredores',/corredor/],['Recebimento',/recebimento/],['Retornos',/retorno/]] as const;
  const areas=orgAreas.map(([title,pattern])=>{const found=organization.filter(t=>pattern.test(normalize(t.title)));return {title,status:!found.length?'Sem tarefa cadastrada':found.every(t=>t.status==='done'&&(t.photos||[]).length>=Math.max(1,t.minPhotos||0))?'Concluída com fotos':'Pendente de conclusão / evidência'}});
  const photos=[...organization.flatMap(t=>(t.photos||[]).map((key:string,i:number)=>({key,title:t.photoInstructions?.[i]||t.title,client:t.client,status:t.status,kind:'organization',area:t.title}))),...all.filter(t=>normalize(t.title)==='relatorio diario operacional'||/inventario/.test(normalize(t.title))).flatMap(t=>(t.photos||[]).map((key:string,i:number)=>({key,title:t.photoInstructions?.[i]||'Inventário',client:t.client,status:t.status,kind:'inventory',area:'Inventário'})))];
- const unique=[...new Map(photos.map(p=>[p.key,p])).values()];
+ const selectedPhotos=client==='Todos'||client==='Pllugo'?photos:photos.filter(p=>p.kind==='organization'&&/corredor|fundos?|recebimento|retornos?/.test(normalize(p.area)));
+ const unique=[...new Map(selectedPhotos.map(p=>[p.key,p])).values()];
  return {unit,date,client,tasks,groups,standard,areas,total:tasks.length,done:summary.done.length,overdue:summary.overdue.length,withPhoto:tasks.filter(t=>t.photos?.length).length,hasPending,status:!tasks.length?'Sem registros relevantes':summary.overdue.length||hasPending?'Requer atenção':summary.done.length===tasks.length?'Rotinas principais concluídas':'Em acompanhamento',photos:unique,checkedAt:new Date().toISOString()};
 }
