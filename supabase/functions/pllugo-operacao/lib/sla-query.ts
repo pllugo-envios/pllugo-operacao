@@ -13,7 +13,7 @@ function ident(s:any){if(typeof s!=='string'||!/^[a-z][a-z0-9_]{0,62}$/.test(s))
 export function compileSlaQuery(q:any){
  if(!q||!['public','app'].includes(q.schema))return fail();const values:any[]=[];
  const param=(v:any)=>{if(v!==null&&!['string','number','boolean'].includes(typeof v))return fail();if(typeof v==='string'&&v.length>100000)return fail();values.push(v);return '$'+values.length};
- if(q.rpc){const spec=rpcs[q.schema+'.'+q.rpc];if(!spec||!q.args||Array.isArray(q.args)||Object.keys(q.args).length>8)return fail();const args=Object.entries(q.args).map(([name,value])=>{const type=spec.args[name];if(!type)return fail();if(type==='uuid[]'){if(!Array.isArray(value)||value.length>100||value.some(v=>typeof v!=='string'||!/^[a-f0-9-]{36}$/i.test(v)))return fail();return ident(name)+' => ARRAY['+value.map(v=>param(v)+'::uuid').join(',')+']::uuid[]'}return ident(name)+' => '+param(value)+'::'+type});return {text:`SELECT ${spec.scalar?'':'* FROM '}${ident(q.schema)}.${ident(q.rpc)}(${args.join(',')})${spec.scalar?' AS value':''}`,values,scalar:!!spec.scalar,single:null};}
+ if(q.rpc){const spec=rpcs[q.schema+'.'+q.rpc];if(!spec||!q.args||Array.isArray(q.args)||Object.keys(q.args).length>8)return fail();const args=Object.entries(q.args).map(([name,value])=>{const type=spec.args[name];if(!type)return fail();if(type==='uuid[]'){if(!Array.isArray(value)||value.length>100||value.some(v=>typeof v!=='string'||!/^[a-f0-9-]{36}$/i.test(v)))return fail();return ident(name)+' => ARRAY['+value.map(v=>param(v)+'::uuid').join(',')+']::uuid[]'}return ident(name)+' => '+param(value)+'::'+type});return {text:`SELECT ${spec.scalar?'':'* FROM '}${ident(q.schema)}.${ident(q.rpc)}(${args.join(',')})${spec.scalar?' AS value':''}`,values,scalar:!!spec.scalar,single:null,requiresRobot:q.rpc==='robot_request_jms_login'};}
  const op=q.op||'select',table=ident(q.schema)+'.'+ident(q.table),alias='t';
  if(op==='select'?!reads[q.schema]?.includes(q.table):q.schema!=='public'||!writes[q.table]?.includes(op))return fail();
  const select=(s:any)=>{if(s==='*')return 't.*';if(typeof s!=='string'||s.length>1200)return fail();return s.split(/,(?![^()]*\))/).map(c=>{if(c==='drivers(full_name)'&&q.schema==='app'&&['tickets','alerts'].includes(q.table))return '(SELECT jsonb_build_object(\'full_name\',d.full_name) FROM app.drivers d WHERE d.id=t.driver_id) AS drivers';return alias+'.'+ident(c)}).join(',')};
@@ -46,6 +46,6 @@ export function compileSlaQuery(q:any){
   if(q.returning)text+=' RETURNING '+select(q.columns||'*');
  }
  if(q.single&&!['required','optional'].includes(q.single))return fail();
- return {text,values,scalar:false,single:q.single||null};
+ return {text,values,scalar:false,single:q.single||null,requiresRobot:q.table.startsWith('robot_')};
 }
 export function slaResult(rows:any[],compiled:any){if(compiled.scalar)return {data:rows[0]?.value??null,error:null};if(compiled.single){if(rows.length>1||(!rows.length&&compiled.single==='required'))return {data:null,error:{message:'Registro não encontrado ou resultado ambíguo.'}};return {data:rows[0]||null,error:null}}return {data:rows,error:null}}

@@ -80,11 +80,12 @@ export const env = {
     const h=Array.from(bytes.slice(0,16),b=>b.toString(16).padStart(2,'0')).join('');
     return {id:`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`,email:user.email,authId:null};
   },
-  async slaExecute(identity:{id:string,email:string},query:{text:string,values:any[]}){
+  async slaExecute(identity:{id:string,email:string},query:{text:string,values:any[],requiresRobot?:boolean}){
     return slaSql().begin(async tx=>{
       await tx.unsafe("SELECT set_config('request.jwt.claims',$1,true),set_config('request.jwt.claim.sub',$2,true)",[JSON.stringify({sub:identity.id,email:identity.email,role:'authenticated'}),identity.id]);
       await tx.unsafe("SET LOCAL ROLE authenticated");
       await tx.unsafe("SET LOCAL statement_timeout = '20s'");
+      if(query.requiresRobot){const check=await tx.unsafe('SELECT public.is_robot_admin() AS allowed');if(check[0]?.allowed!==true)throw Error('Acesso ao robô não permitido.');}
       return await tx.unsafe(query.text,query.values);
     });
   },
