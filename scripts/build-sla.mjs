@@ -23,6 +23,15 @@ async function workbookReady(){try{await ensureWorkbookLibrary();return true}cat
  // The original demo reset is deliberately absent from the integrated app.
  replace("$('#btn-clear-data').addEventListener('click', clearAllData);",'');
  html=html.replace(/<button class="btn-clear" id="btn-clear-data"[^>]*>[\s\S]*?<\/button>/,'');
+ html=html.replace(/<button class="btn-clear" id="btn-sound-alerts"[^>]*>[\s\S]*?<\/button>/,'');
+ html=html.replace(/<button class="btn-update" id="btn-update-dash"[^>]*>[\s\S]*?<\/button>/,'');
+ html=html.replace(/^\$\('#btn-sound-alerts'\)\.addEventListener.*$/m,'');
+ html=html.replace(/^  \$\('#btn-sound-alerts'\)\.textContent=.*$/m,'');
+ replace("$('#btn-update-dash').addEventListener('click', () => $('#upload-input').click());",'');
+ replace("let soundAlertsEnabled = true; try { soundAlertsEnabled = localStorage.getItem('pllugo_sound_alerts_v2') !== 'off'; } catch(e) {}",'const soundAlertsEnabled = false;');
+ replace("const btn = $('#btn-update-dash'), label = $('#btn-update-label');","const btn = document.createElement('button'), label = document.createElement('span');");
+ replace('<span style="font-size:11px; color:var(--gray-500);">visível só para admin</span>','<button type="button" id="robot-panel-close" aria-label="Fechar motor de dados" style="padding:8px 12px;border:1px solid #eee;border-radius:8px;background:#fff;cursor:pointer">✕</button>');
+ replace("$('#btn-robot')?.addEventListener('click', () => {","$('#robot-panel-close')?.addEventListener('click',()=>{$('#robot-panel').style.display='none'});\ndocument.addEventListener('keydown',e=>{if(e.key==='Escape')$('#robot-panel').style.display='none'});\n$('#btn-robot')?.addEventListener('click', () => {");
  html=html.replace(/<link[^>]+href="https:\/\/fonts\.[^>]+>/g,'');
  const csp=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; media-src 'self' blob:; form-action 'none'; base-uri 'self' http://127.0.0.1:* https://pllugo-envios.github.io">`;
  replace('<head>','<head>'+csp);
@@ -32,6 +41,10 @@ async function workbookReady(){try{await ensureWorkbookLibrary();return true}cat
  header{position:relative!important;top:auto!important}.topbar-brand,.topbar .brand{display:none!important}
  .container{max-width:none!important}.topbar{padding-top:8px!important;padding-bottom:8px!important}
  body{min-width:0!important}#pd-root{margin-top:12px!important}
+ .filters,.carrier-tabs{position:static!important;top:auto!important;z-index:auto!important}
+ #robot-panel{position:fixed!important;inset:12px 12px auto!important;width:auto!important;max-width:600px!important;margin:0 auto!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important;box-sizing:border-box!important;z-index:2500!important;overscroll-behavior:contain}
+ #robot-panel-body>div{align-items:flex-start!important;gap:12px;flex-wrap:wrap}
+ #robot-panel-body>div>div{flex:1 1 180px}#robot-panel-body span{white-space:normal!important;overflow-wrap:anywhere}#robot-panel-body button,#robot-panel-body a{white-space:normal!important;max-width:100%}
  @media(max-width:600px){.topbar-inner{flex-wrap:wrap!important}.topbar-right{flex-wrap:wrap!important}.filters-inner{flex-wrap:wrap!important}}
  </style></head>`);
  await mkdir('public/modules/sla',{recursive:true});await writeFile('public/modules/sla/index.html',html);

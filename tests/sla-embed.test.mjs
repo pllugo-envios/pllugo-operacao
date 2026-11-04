@@ -8,6 +8,7 @@ test('embedded SLA preserves executable screens, has no second client session an
  for(const m of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(m[1].trim())assert.doesNotThrow(()=>new vm.Script(m[1]));
  assert.ok(html.includes('const sb=window.pllugoSlaClient'));assert.ok(!html.includes('createClient('));assert.ok(!html.includes('cdn.jsdelivr.net'));
  assert.ok(!html.includes('id="btn-clear-data"'));assert.ok(!html.includes('<script src="vendor/xlsx'));assert.ok(html.includes('async function exportBaseRows'));
+ assert.ok(!html.includes('id="btn-update-dash"'));assert.ok(!html.includes('id="btn-sound-alerts"'));assert.ok(html.includes('id="robot-panel-close"'));
 });
 test('sandbox bridge checks parent/origin/channel, queues queries and never receives an access token',async()=>{
  const sent=[],listeners={};const parent={postMessage:m=>sent.push(m)};

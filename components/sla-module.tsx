@@ -7,7 +7,7 @@ export default function SlaModule({view,onExpired,onNavigate}:{view:string,onExp
  current.current=view;expired.current=onExpired;navigate.current=onNavigate;
  useEffect(()=>{
   const abort=new AbortController();setError('');setIdentity(null);setHtml('');setReady(false);
-  window.fetch(asset('/modules/sla/index.html')+'?v=20261104b',{signal:abort.signal,cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Não foi possível carregar o módulo SLA.');return r.text()}).then(text=>setHtml(text.replace('<head>','<head><base href="'+new URL(asset('/modules/sla/'),document.baseURI).href+'"><meta name="pllugo-channel" content="'+channel.current+'">'))).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
+  window.fetch(asset('/modules/sla/index.html')+'?v=20261104c',{signal:abort.signal,cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Não foi possível carregar o módulo SLA.');return r.text()}).then(text=>setHtml(text.replace('<head>','<head><base href="'+new URL(asset('/modules/sla/'),document.baseURI).href+'"><meta name="pllugo-channel" content="'+channel.current+'">'))).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
   api('/api/sla',{signal:abort.signal}).then(async r=>{if(r.status===401)expired.current();if(!r.ok)throw Error(await r.text());return r.json()}).then(setIdentity).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
   bootDeadline.current=setTimeout(()=>setError('O módulo demorou a abrir. Tente novamente.'),30000);
   return()=>{abort.abort();if(bootDeadline.current)clearTimeout(bootDeadline.current)};

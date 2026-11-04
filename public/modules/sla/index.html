@@ -838,6 +838,10 @@
  header{position:relative!important;top:auto!important}.topbar-brand,.topbar .brand{display:none!important}
  .container{max-width:none!important}.topbar{padding-top:8px!important;padding-bottom:8px!important}
  body{min-width:0!important}#pd-root{margin-top:12px!important}
+ .filters,.carrier-tabs{position:static!important;top:auto!important;z-index:auto!important}
+ #robot-panel{position:fixed!important;inset:12px 12px auto!important;width:auto!important;max-width:600px!important;margin:0 auto!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important;box-sizing:border-box!important;z-index:2500!important;overscroll-behavior:contain}
+ #robot-panel-body>div{align-items:flex-start!important;gap:12px;flex-wrap:wrap}
+ #robot-panel-body>div>div{flex:1 1 180px}#robot-panel-body span{white-space:normal!important;overflow-wrap:anywhere}#robot-panel-body button,#robot-panel-body a{white-space:normal!important;max-width:100%}
  @media(max-width:600px){.topbar-inner{flex-wrap:wrap!important}.topbar-right{flex-wrap:wrap!important}.filters-inner{flex-wrap:wrap!important}}
  </style></head>
 <body>
@@ -885,7 +889,7 @@
         <div id="robot-panel" style="display:none; position:absolute; top:calc(100% + 8px); right:0; width:340px; background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius-md); box-shadow:0 8px 24px rgba(0,0,0,0.12); padding:12px 14px; z-index:200; font-size:13px;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
             <strong style="font-size:13px;">Motor de dados</strong>
-            <span style="font-size:11px; color:var(--gray-500);">visível só para admin</span>
+            <button type="button" id="robot-panel-close" aria-label="Fechar motor de dados" style="padding:8px 12px;border:1px solid #eee;border-radius:8px;background:#fff;cursor:pointer">✕</button>
           </div>
           <div id="robot-panel-body" style="display:flex; flex-direction:column;">
             <div style="padding:8px 0; color:var(--gray-500);">Carregando…</div>
@@ -893,12 +897,9 @@
         </div>
       </div>
       <button class="btn-logout" id="btn-logout" title="Sair">Sair</button>
-      <button class="btn-clear" id="btn-sound-alerts" title="Ativar/desativar alerta sonoro da Torre">🔊 Alertas</button>
       
-      <button class="btn-update" id="btn-update-dash">
-        <span class="spin"></span>
-        <span id="btn-update-label">Atualizar Dashboard</span>
-      </button>
+      
+      
     </div>
   </div>
 </header>
@@ -3183,7 +3184,7 @@ async function handleFilesSelected(fileList) {
   try{await ensureWorkbookLibrary()}catch(e){setImportStatus(e.message,'err');return}
   const files = Array.from(fileList || []);
   if (!files.length) return;
-  const btn = $('#btn-update-dash'), label = $('#btn-update-label');
+  const btn = document.createElement('button'), label = document.createElement('span');
   btn.disabled = true; btn.classList.add('loading');
   setImportStatus(`Lendo ${files.length} arquivo(s)...`, 'busy');
 
@@ -3303,7 +3304,7 @@ let TOWER_SNAPSHOTS_DATE = null;
 // computador dela), não um dado que precise ser igual pra todo mundo — por
 // isso, diferente de tudo mais nesta versão, fica de propósito fora do
 // Supabase.
-let soundAlertsEnabled = true; try { soundAlertsEnabled = localStorage.getItem('pllugo_sound_alerts_v2') !== 'off'; } catch(e) {}
+const soundAlertsEnabled = false;
 
 function saoPauloToday() {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone:'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(new Date());
@@ -6007,7 +6008,7 @@ $('#unit-filter').addEventListener('change', e => {
 });
 $('#tower-search-input').addEventListener('input', renderTower);
 $('#tower-status-filter').addEventListener('change', renderTower);
-$('#btn-sound-alerts').addEventListener('click',()=>{soundAlertsEnabled=!soundAlertsEnabled;localStorage.setItem('pllugo_sound_alerts_v2',soundAlertsEnabled?'on':'off');$('#btn-sound-alerts').textContent=(soundAlertsEnabled?'🔊':'🔇')+' Alertas';if(soundAlertsEnabled)playAlertTone();});
+
 
 $('#date-start').addEventListener('change', e => { state.customStart = e.target.value; $('#date-end').min = e.target.value; refresh(); });
 $('#date-end').addEventListener('change', e => { state.customEnd = e.target.value; $('#date-start').max = e.target.value; refresh(); });
@@ -6051,11 +6052,11 @@ async function applyLoadedData() {
     $('#date-end').max = allDates[allDates.length - 1];
   }
   if(state.mode==='torre')await captureTowerSnapshot();
-  $('#btn-sound-alerts').textContent=(soundAlertsEnabled?'🔊':'🔇')+' Alertas';
+
   refresh();
 }
 
-$('#btn-update-dash').addEventListener('click', () => $('#upload-input').click());
+
 
 $('#upload-input').addEventListener('change', (e) => {
   handleFilesSelected(e.target.files);
@@ -6331,6 +6332,8 @@ async function refreshRobotPanel() {
   } finally { robotPanelBusy = false; }
 }
 
+$('#robot-panel-close')?.addEventListener('click',()=>{$('#robot-panel').style.display='none'});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#robot-panel').style.display='none'});
 $('#btn-robot')?.addEventListener('click', () => {
   const panel = $('#robot-panel');
   if (!robotHasAccess || !panel) return;
