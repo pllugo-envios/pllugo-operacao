@@ -1,0 +1,6 @@
+import {current,json,failure,HttpError,manager,sameOrigin} from '../../../lib/access.ts';
+import {env} from '../../../lib/runtime-env.ts';
+import {compileSlaQuery,slaResult,SlaQueryError} from '../../../lib/sla-query.ts';
+async function access(req:Request){const user=await current(req);if(!manager(user))throw new HttpError(403,'Módulo disponível para administradores e gestores.');return user;}
+export async function GET(req:Request){try{const user=await access(req);const identity=await env.slaIdentity(user);if(!identity)throw new HttpError(403,'Seu acesso ainda não está vinculado ao SLA. Solicite a vinculação ao administrador.');return json({user:identity})}catch(e){return failure(e)}}
+export async function POST(req:Request){try{sameOrigin(req);const user=await access(req);const query=await req.json();const identity=await env.slaIdentity(user);if(!identity)throw new HttpError(403,'Seu acesso ainda não está vinculado ao SLA.');const compiled=compileSlaQuery({...query,actorId:identity.authId,actorEmail:identity.email,operacaoActor:user.id});const rows=await env.slaExecute(identity,compiled);return json(slaResult(rows,compiled))}catch(e:any){if(e instanceof SlaQueryError)return json({data:null,error:{message:e.message}},400);return failure(e)}}

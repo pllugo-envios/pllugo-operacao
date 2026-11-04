@@ -2,6 +2,13 @@ import postgres from 'npm:postgres@3.4.7';
 import { createDatabase } from './postgres-adapter.mjs';
 
 let connection: ReturnType<typeof postgres> | undefined;
+let slaConnection: ReturnType<typeof postgres> | undefined;
+function slaSql(){
+  // Heavy SLA reports have their own bounded pool; task execution does not
+  // queue behind history/retention scans on the operation connection.
+  if(!slaConnection){const url=Deno.env.get('SUPABASE_DB_URL');if(!url)throw Error('Banco não configurado.');slaConnection=postgres(url,{max:2,prepare:false,ssl:{rejectUnauthorized:true},idle_timeout:20,connect_timeout:10});}
+  return slaConnection;
+}
 function sql() {
   if (!connection) {
     const url = Deno.env.get('SUPABASE_DB_URL');
@@ -62,6 +69,25 @@ function storage() {
   };
 }
 export const env = {
+  async slaIdentity(user:{id:string,email:string,owner?:boolean}){
+    // Only the owner's existing, Supabase-verified login delegates an Auth identity.
+    // Internal managed accounts get a separate namespace, never an email-based
+    // impersonation of a privileged Driver/robot account.
+    if(user.owner){const rows=await sql().unsafe("SELECT id,email FROM auth.users WHERE lower(email)=lower($1) AND email_confirmed_at IS NOT NULL AND deleted_at IS NULL AND (banned_until IS NULL OR banned_until<now()) LIMIT 1",[user.email]);
+      if(rows[0])return {...rows[0],authId:rows[0].id};return null;
+    }
+    const bytes=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('pllugo-operacao:sla:'+user.id)));bytes[6]=(bytes[6]&15)|80;bytes[8]=(bytes[8]&63)|128;
+    const h=Array.from(bytes.slice(0,16),b=>b.toString(16).padStart(2,'0')).join('');
+    return {id:`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`,email:user.email,authId:null};
+  },
+  async slaExecute(identity:{id:string,email:string},query:{text:string,values:any[]}){
+    return slaSql().begin(async tx=>{
+      await tx.unsafe("SELECT set_config('request.jwt.claims',$1,true),set_config('request.jwt.claim.sub',$2,true)",[JSON.stringify({sub:identity.id,email:identity.email,role:'authenticated'}),identity.id]);
+      await tx.unsafe("SET LOCAL ROLE authenticated");
+      await tx.unsafe("SET LOCAL statement_timeout = '20s'");
+      return await tx.unsafe(query.text,query.values);
+    });
+  },
   async verifyPassword(email:string,password:string){
     try{const url=Deno.env.get('SUPABASE_URL')!,key=Deno.env.get('SUPABASE_ANON_KEY')!;
       const response=await fetch(url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email,password}),signal:AbortSignal.timeout(10000)});
