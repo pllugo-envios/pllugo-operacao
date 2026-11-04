@@ -6,7 +6,7 @@ let slaConnection: ReturnType<typeof postgres> | undefined;
 function slaSql(){
   // Heavy SLA reports have their own bounded pool; task execution does not
   // queue behind history/retention scans on the operation connection.
-  if(!slaConnection){const url=Deno.env.get('SUPABASE_DB_URL');if(!url)throw Error('Banco não configurado.');slaConnection=postgres(url,{max:2,prepare:false,ssl:{rejectUnauthorized:true},idle_timeout:20,connect_timeout:10});}
+  if(!slaConnection){const url=Deno.env.get('SUPABASE_DB_URL');if(!url)throw Error('Banco não configurado.');slaConnection=postgres(url,{max:2,prepare:false,ssl:{rejectUnauthorized:true},idle_timeout:20,connect_timeout:10,types:{calendarDate:{to:1082,from:[1082],serialize:(value:string)=>value,parse:(value:string)=>value}}});}
   return slaConnection;
 }
 function sql() {
