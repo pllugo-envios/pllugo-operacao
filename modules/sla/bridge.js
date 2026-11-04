@@ -1,6 +1,6 @@
 // Sandboxed module: session tokens and database credentials stay in the host.
 (() => {
- const hostOrigin=new URL(document.referrer).origin,channel=document.querySelector('meta[name=pllugo-channel]')?.content||location.hash.slice(1),pending=new Map();let seq=0,identity=null,readyResolve,currentSelected=null;
+ const hostOrigin=new URL(document.querySelector('base')?.href||document.referrer).origin,channel=document.querySelector('meta[name=pllugo-channel]')?.content||location.hash.slice(1),pending=new Map();let seq=0,identity=null,readyResolve,currentSelected=null;
  const ready=new Promise(resolve=>{readyResolve=resolve});
  const queue=[];let active=0;
  function pump(){while(active<4&&queue.length){active++;queue.shift()()}}
