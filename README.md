@@ -150,3 +150,7 @@ rotinas e Equipe, conforme o nível de acesso. O fechamento manual da unidade fo
 retirado da interface, preservando os registros históricos. Configuração reúne
 perfil, unidades autorizadas, explicação de permissões e os atalhos administrativos
 já disponíveis; não simula controles futuros nem altera acessos automaticamente.
+
+O resumo mensal usa a projeção compacta `summary: monthly` do gateway SLA: retorna
+somente totais por unidade e datas, sem transportar pedidos ou motoristas para a
+tela inicial. O recorte de unidades é aplicado antes dessa projeção.
