@@ -21,13 +21,13 @@ export function setRememberSession(value:boolean){load();remember=value;save(ses
 export function isRemembered(){load();return remember}
 export function asset(path:string){return new URL(path.replace(/^\//,''),document.baseURI).href}
 const mobileDevice=crypto.randomUUID();
-export async function mobileControlApi(path:string,body:any,signal:AbortSignal){
+export async function mobileControlApi(path:string,body:any,signal:AbortSignal,device=mobileDevice){
   if(!validMobilePath(path))throw Error('Controle inválido.');load();
   if(!session)return new Response(JSON.stringify({error:'Entre novamente no app Operação.'}),{status:401,headers:{'Content-Type':'application/json'}});
   return fetch('https://pllugo-robo-production.up.railway.app/api/mobile-jms'+path,{
     method:body===undefined?'GET':'POST',body:body===undefined?undefined:JSON.stringify(body),
-    headers:{Authorization:'Bearer '+session,'Content-Type':'application/json','X-Control-ID':mobileDevice},
-    credentials:'omit',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])});
+    headers:{Authorization:'Bearer '+session,'Content-Type':'application/json','X-Control-ID':device},
+    credentials:'omit',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
 }
 export async function api(path:string,options:RequestInit={}){
   if(!/^\/api\/(auth|data|users|assign|photo|geocode|dashboard|create|edit|sla)(\?|$)/.test(path))throw Error('Endereço de serviço inválido.');

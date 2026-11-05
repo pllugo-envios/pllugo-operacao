@@ -28,8 +28,12 @@
  window.pllugoMobileTransport=async(path,body)=>{
   const result=await request({mobileControl:{path,body}});
   if(result.error||!result.mobileResponse)throw Error(result.error?.message||'Controle indisponível.');
-  const r=result.mobileResponse;return new Response(r.body,{status:r.status,headers:{'Content-Type':r.contentType}});
+  const r=result.mobileResponse;return new Response(r.body,{status:r.status,headers:{'Content-Type':r.contentType,...(r.rect?{'X-Control-Rect':r.rect}:{})}});
  };
+ window.PllugoMobileLogin={open:async options=>{
+  const result=await request({mobileOpen:{flow:options.flow}});
+  if(result.error)throw Error(result.error.message);
+ },close:()=>{}};
  window.pllugoSlaSelected=mode=>{currentSelected=mode;parent.postMessage({type:'pllugo-sla-view',channel,view:'SLA:'+mode},hostOrigin)};
  const announce=()=>parent.postMessage({type:'pllugo-sla-ready',channel},hostOrigin);announce();const timer=setInterval(announce,300);ready.then(()=>clearInterval(timer));
 })();
