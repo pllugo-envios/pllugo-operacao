@@ -165,3 +165,10 @@ quantidade em aberto e taxa de entrega, com barra de progresso e horário dos
 dados do dia. Os indicadores mensais continuam abaixo, sem o cartão Dias com
 dados. O resumo diário usa os mesmos relatórios já consultados para o mês,
 sem requisição adicional e sem reutilizar dados de ontem quando hoje estiver vazio.
+
+Regressão de transporte SLA: a lista de unidades via postgres.js precisa ser
+vinculada como texto antes do cast JSONB (`::text::jsonb`). O driver usa os tipos
+inferidos pelo servidor e, com `::jsonb` direto, serializa novamente o JSON já
+codificado, causando respostas vazias para acessos restritos. O teste
+`sla-wire.test.mjs` usa postgres.js 3.4.7, igual à produção, sobre o protocolo
+PostgreSQL do PGlite para reproduzir o erro antigo e validar o isolamento correto.

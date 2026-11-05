@@ -2,7 +2,8 @@ import type {UnitScope} from './unit-scope.ts';
 export function scopedSlaSource(table:string,scope:UnitScope,param:(value:any)=>string){
  const units=scope.units;
  if(!units.length||units.some(u=>!['maua','maua2','rbp'].includes(u)))throw Error('Unidade não autorizada.');
- const keys=param(JSON.stringify(units))+'::jsonb';
+ // Keep the wire parameter as text; postgres.js otherwise serializes JSON again.
+ const keys=param(JSON.stringify(units))+'::text::jsonb';
  const matches=(column:string)=>`${keys} ? ${column}`;
  if(['orders','order_events','operational_orders','v_order_current_intelligence','driver_interventions'].includes(table))return `(SELECT * FROM public."${table}" s WHERE ${matches('s.unit')})`;
  if(table==='sla_days')return `(SELECT d.date,d.source,s.total,s.entregues,s.pendentes,s.problematicos,
