@@ -22,3 +22,8 @@ test('only the outside area dismisses a dialog; inner controls and active upload
  dismissBackdrop({target:outer,currentTarget:outer},close,false);assert.equal(closed,0);
  dismissBackdrop({target:outer,currentTarget:outer},close);assert.equal(closed,1);
 });
+
+test('new home, routine overview and settings restore; retired manual closing does not',()=>fixture(()=>{
+ for(const view of ['Início','Rotina:geral','Configuração']){saveNavigation(worker.id,{view,unit:'U1'});assert.equal(readNavigation(worker,units,'2026-11-05').view,view)}
+ saveNavigation(admin.id,{view:'Qualidade & SLA',unit:'U1'});assert.equal(readNavigation(admin,units,'2026-11-05').view,'Início');
+}));

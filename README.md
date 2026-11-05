@@ -134,3 +134,19 @@ compartilhados, notas globais da Torre, integração Driver e controle do robô
 continuam restritos à administração; não se salvam fotografias parciais sobre
 as fotografias gerais. As permissões pessoais das tarefas permanecem vigentes.
 Não foi necessário alterar RLS, schema, contas ou automações de importação.
+
+## Início e navegação
+
+A tela Início apresenta o mês vigente em Brasília: volume dos relatórios diários,
+entregas registradas, taxa ponderada e dias com dados. A seleção do mês é automática;
+a tela reconsulta os dados a cada minuto e ao retornar ao app, respeitando o escopo
+de unidades do gateway SLA. J&T oficial substitui a prévia por dia/unidade; não se
+somam os dois. Os volumes acumulados não representam pedidos únicos do mês.
+
+A antiga tela inicial fica em **Rotina e evidências → Visão Geral**. A ordem do
+menu é Início, Operação SLA, Rotina e evidências, Cadastros e Configuração. Todos
+os grupos começam fechados a cada abertura do menu. Cadastros reúne Tarefas e
+rotinas e Equipe, conforme o nível de acesso. O fechamento manual da unidade foi
+retirado da interface, preservando os registros históricos. Configuração reúne
+perfil, unidades autorizadas, explicação de permissões e os atalhos administrativos
+já disponíveis; não simula controles futuros nem altera acessos automaticamente.
