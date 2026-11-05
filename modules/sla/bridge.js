@@ -25,6 +25,11 @@
  const schema=name=>({from:table=>new Query(name,table),rpc:(rpc,args={})=>request({schema:name,rpc,args})});
  window.pllugoSlaClient={...schema('public'),schema,auth:{getSession:async()=>{await ready;return {data:{session:{user:identity}}}},getUser:async()=>{await ready;return {data:{user:identity}}},onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),signOut:async()=>({error:null}),signInWithPassword:async()=>({error:{message:'Entre pelo app Pllugo.'}})}};
  window.pllugoSlaReady=ready;
+ window.pllugoMobileTransport=async(path,body)=>{
+  const result=await request({mobileControl:{path,body}});
+  if(result.error||!result.mobileResponse)throw Error(result.error?.message||'Controle indisponível.');
+  const r=result.mobileResponse;return new Response(r.body,{status:r.status,headers:{'Content-Type':r.contentType}});
+ };
  window.pllugoSlaSelected=mode=>{currentSelected=mode;parent.postMessage({type:'pllugo-sla-view',channel,view:'SLA:'+mode},hostOrigin)};
  const announce=()=>parent.postMessage({type:'pllugo-sla-ready',channel},hostOrigin);announce();const timer=setInterval(announce,300);ready.then(()=>clearInterval(timer));
 })();

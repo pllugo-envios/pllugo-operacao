@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
-import {asset,api} from '../lib/client-api';
+import {asset,api,mobileControlApi} from '../lib/client-api';
+import {forwardMobileControl} from '../lib/mobile-control';
 import {slaLabel,isSlaView} from '../lib/app-modules';
 export default function SlaModule({view,onExpired,onNavigate}:{view:string,onExpired:()=>void,onNavigate:(view:string)=>void}){
  const bootDeadline=useRef<ReturnType<typeof setTimeout>|null>(null),frame=useRef<HTMLIFrameElement>(null),current=useRef(view),expired=useRef(onExpired),navigate=useRef(onNavigate),channel=useRef(crypto.randomUUID());
@@ -7,7 +8,7 @@ export default function SlaModule({view,onExpired,onNavigate}:{view:string,onExp
  current.current=view;expired.current=onExpired;navigate.current=onNavigate;
  useEffect(()=>{
   const abort=new AbortController();setError('');setIdentity(null);setHtml('');setReady(false);
-  window.fetch(asset('/modules/sla/index.html')+'?v=20261104c',{signal:abort.signal,cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Não foi possível carregar o módulo SLA.');return r.text()}).then(text=>setHtml(text.replace('<head>','<head><base href="'+new URL(asset('/modules/sla/'),document.baseURI).href+'"><meta name="pllugo-channel" content="'+channel.current+'">'))).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
+  window.fetch(asset('/modules/sla/index.html')+'?v=20261105-mobile1',{signal:abort.signal,cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Não foi possível carregar o módulo SLA.');return r.text()}).then(text=>setHtml(text.replace('<head>','<head><base href="'+new URL(asset('/modules/sla/'),document.baseURI).href+'"><meta name="pllugo-channel" content="'+channel.current+'">'))).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
   api('/api/sla',{signal:abort.signal}).then(async r=>{if(r.status===401)expired.current();if(!r.ok)throw Error(await r.text());return r.json()}).then(setIdentity).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
   bootDeadline.current=setTimeout(()=>setError('O módulo demorou a abrir. Tente novamente.'),30000);
   return()=>{abort.abort();if(bootDeadline.current)clearTimeout(bootDeadline.current)};
@@ -22,6 +23,11 @@ export default function SlaModule({view,onExpired,onNavigate}:{view:string,onExp
    if(m.type==='pllugo-sla-ready'){target.postMessage({type:'pllugo-sla-init',channel:channel.current,user:identity.user,view:current.current},'*');setReady(true);return}
    if(m.type!=='pllugo-sla-request'||!Number.isSafeInteger(m.id)||active>=8)return;active++;
    try{
+    if(m.payload?.mobileControl){
+      const result=await forwardMobileControl(m.payload.mobileControl,(path,body)=>mobileControlApi(path,body,abort.signal));
+      if(!abort.signal.aborted)target.postMessage({type:'pllugo-sla-result',channel:channel.current,id:m.id,result},'*');
+      return;
+    }
     const r=await api('/api/sla',{method:'POST',signal:abort.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(m.payload)});
     if(r.status===401){expired.current();return}
     const result=r.ok?await r.json():{data:null,error:{message:await r.text()}};

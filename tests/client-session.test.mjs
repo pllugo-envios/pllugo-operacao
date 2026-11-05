@@ -1,9 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import ts from 'typescript';
-const source=await readFile(new URL('../lib/client-api.ts',import.meta.url),'utf8');
-const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
+import {build} from 'esbuild';
+const compiled=(await build({entryPoints:['lib/client-api.ts'],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022'})).outputFiles[0].text;
+
+test('controle móvel usa sessão privada do app só em header para destino fixo e bloqueia outros caminhos',()=>fixture(async({api,calls,reply})=>{
+ await api.api('/api/auth',{method:'POST'});reply(Response.json({id:'sessao'}));
+ await api.mobileControlApi('/claim',{flow:'jms-sla-motorista'},new AbortController().signal);
+ const request=calls.at(-1);assert.equal(request.url,'https://pllugo-robo-production.up.railway.app/api/mobile-jms/claim');
+ assert.equal(request.options.headers.Authorization,'Bearer '+'a'.repeat(64));
+ assert.match(request.options.headers['X-Control-ID'],/^[a-f0-9-]{36}$/);
+ assert.ok(!request.url.includes('a'.repeat(64)));assert.ok(!request.options.body.includes('a'.repeat(64)));
+ await assert.rejects(api.mobileControlApi('https://evil.test',{},new AbortController().signal));
+ reply(new Response('{}',{status:401}));await api.api('/api/data');
+ const before=calls.length;assert.equal((await api.mobileControlApi('/claim',{},new AbortController().signal)).status,401);assert.equal(calls.length,before);
+}));
 function storage(){const map=new Map();return {map,getItem:key=>map.get(key)||null,setItem:(key,value)=>map.set(key,value),removeItem:key=>map.delete(key)}}
 async function fixture(run){
   const old={window:globalThis.window,document:globalThis.document,fetch:globalThis.fetch};
