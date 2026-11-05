@@ -25,7 +25,7 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
  const img=modal.querySelector('.screen');
  const status=modal.querySelector('.pmj-status'),zoom=modal.querySelector('.zoom');
  const device=crypto.randomUUID();let id,closed=false,stopped=false,pointer=null,events=[],sending=false,pan=false,gesture=false,gesturePending=false;
- let frameTimer,inputTimer,lastPoint,lastHeartbeat=0,rect=null,gestureRect=null,full=false,frameFailures=0,epoch=0,leaving=Promise.resolve();
+ let frameTimer,inputTimer,lastPoint,lastHeartbeat=0,rect=null,gestureRect=null,full=false,frameFailures=0,epoch=0,leaving=Promise.resolve(),holdSending=false,lastHold=0,lastHoldAck=0;
  const setStatus=(state,message)=>{modal.dataset.state=state;status.textContent=message;};
  const headers=async()=>{const result=await client.auth.getSession();if(!result.data?.session?.access_token)throw new Error('Entre novamente no dashboard.');return {Authorization:'Bearer '+result.data.session.access_token,'X-Control-ID':device,'Content-Type':'application/json'};};
  async function request(path,body){
@@ -41,7 +41,14 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
   if(sending||!events.length||closed||stopped||!id)return;sending=true;const batch=events.splice(0,24),current=epoch;
   try{await request('/'+id+'/input',{events:batch});if(current===epoch&&!gesture&&!events.some(e=>e.type==='down')&&batch.some(e=>e.type==='up'||e.type==='cancel'))gesturePending=false;}
   catch(error){if(current===epoch&&!closed)stop(error.status===410?'A validação terminou. Confira a atualização no painel.':'O gesto foi interrompido. Toque em Reconectar para continuar sem repetir o login.',error.status===410);}
-  finally{sending=false;if(events.length&&!closed&&!stopped)void flush();}
+  finally{sending=false;if(events.some(e=>e.type!=='move')&&!closed&&!stopped)void flush();}
+ }
+ async function hold(){
+  if(holdSending||!gesture||closed||stopped)return;
+  holdSending=true;lastHold=Date.now();const current=epoch;
+  try{await request('/'+id+'/hold',{});if(current===epoch)lastHoldAck=Date.now();}
+  catch(error){if(current===epoch&&gesture&&[401,403,409,410].includes(error.status))stop('O controle foi encerrado. Levante o dedo e reconecte.',error.status===410);}
+  finally{if(current===epoch)holdSending=false;}
  }
  function enqueue(e){
   if(closed||stopped||!id)return;
@@ -54,7 +61,7 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
  for(const name of ['contextmenu','selectstart','dragstart'])img.addEventListener(name,e=>{e.preventDefault();e.stopPropagation();});
  img.addEventListener('touchstart',e=>{if(!pan)e.preventDefault();},{passive:false});
  img.addEventListener('touchmove',e=>{if(!pan)e.preventDefault();},{passive:false});
- img.addEventListener('pointerdown',e=>{if(pan||pointer!==null||stopped||!id||img.dataset.ready!=='true')return;e.preventDefault();if(gesturePending){setStatus('connecting','Concluindo o gesto anterior…');return;}gesturePending=true;pointer=e.pointerId;gesture=true;gestureRect=rect;img.setPointerCapture(pointer);enqueue(point(e,'down'));});
+ img.addEventListener('pointerdown',e=>{if(pan||pointer!==null||stopped||!id||img.dataset.ready!=='true')return;e.preventDefault();if(gesturePending){setStatus('connecting','Concluindo o gesto anterior…');return;}gesturePending=true;pointer=e.pointerId;gesture=true;lastHoldAck=Date.now();gestureRect=rect;img.setPointerCapture(pointer);enqueue(point(e,'down'));void hold();});
  img.addEventListener('pointermove',e=>{if(e.pointerId===pointer&&!pan){e.preventDefault();enqueue(point(e,'move'));}});
  function release(e){if(e.pointerId!==pointer)return;e.preventDefault();enqueue(e.type==='pointerup'?point(e,'up'):{type:'cancel'});pointer=null;gesture=false;gestureRect=null;}
  img.addEventListener('pointerup',release);img.addEventListener('pointercancel',release);img.addEventListener('lostpointercapture',()=>{if(pointer!==null){pointer=null;gesture=false;gestureRect=null;enqueue({type:'cancel'});}});
@@ -87,15 +94,21 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
   frameTimer=setTimeout(()=>void frame(current),700);
  }
  async function connect(){
-  if(closed||sending)return;stopped=false;gesturePending=false;frameFailures=0;events=[];id=null;rect=null;gestureRect=null;const current=++epoch;clearTimeout(frameTimer);clearInterval(inputTimer);img.style.pointerEvents='none';setStatus('connecting','Conectando à sua sessão…');
+  if(closed||sending)return;stopped=false;gesturePending=false;holdSending=false;lastHold=0;frameFailures=0;events=[];id=null;rect=null;gestureRect=null;const current=++epoch;clearTimeout(frameTimer);clearInterval(inputTimer);img.style.pointerEvents='none';setStatus('connecting','Conectando à sua sessão…');
   try{
    await leaving;if(closed||current!==epoch)return;
-   const deadline=Date.now()+120000;
+   const deadline=Date.now()+120000;let claimFailures=0;
    while(!closed&&current===epoch&&Date.now()<deadline){
     try{const response=await request('/claim',{flow});id=(await response.json()).id;break;}
-    catch(error){if(error.status!==425)throw error;const run=await getRunStatus();if(closed||current!==epoch)return;if(run==='completed'){stop('Acesso liberado. Confira a atualização no painel.',true);return;}if(run==='error'||run==='needs_attention')throw new Error('A execução terminou. Feche esta tela e inicie novamente pelo painel.');setStatus('connecting','Aguardando o sistema mostrar a validação…');await new Promise(r=>setTimeout(r,1500));}
+    catch(error){
+     if(error.status!==425){if((!error.status||[429,500,502,503,504].includes(error.status))&&claimFailures++<2&&Date.now()<deadline-3000){setStatus('connecting','Recuperando a validação do acesso…');await new Promise(r=>setTimeout(r,1500));continue;}throw error;}
+     const run=await getRunStatus();if(closed||current!==epoch)return;if(run==='completed'){stop('Acesso liberado. Confira a atualização no painel.',true);return;}if(run==='error'||run==='needs_attention')throw new Error('A execução terminou. Feche esta tela e inicie novamente pelo painel.');setStatus('connecting','Aguardando o sistema mostrar a validação…');await new Promise(r=>setTimeout(r,1500));
+    }
    }
-   if(closed||current!==epoch){void leave();return;}if(!id)throw new Error('A validação não abriu. Consulte o painel.');img.style.pointerEvents='';inputTimer=setInterval(()=>{if(gesture&&lastPoint&&Date.now()-lastHeartbeat>500){lastHeartbeat=Date.now();enqueue({...lastPoint,type:'move'});}void flush();},120);void frame(current);
+   if(closed||current!==epoch){void leave();return;}if(!id)throw new Error('A validação não abriu. Consulte o painel.');img.style.pointerEvents='';inputTimer=setInterval(()=>{
+    if(gesture){if(Date.now()-lastHoldAck>18000){stop('A conexão foi interrompida. Levante o dedo e reconecte.');return;}if(Date.now()-lastHold>1000)void hold();}
+    if(gesture&&lastPoint&&Date.now()-lastHeartbeat>500){lastHeartbeat=Date.now();enqueue({...lastPoint,type:'move'});}void flush();
+   },120);void frame(current);
   }catch(error){if(!closed&&current===epoch)stop(error.message);}
  }
  modal.querySelector('.retry').onclick=()=>void connect();await connect();

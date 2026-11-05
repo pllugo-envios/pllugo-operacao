@@ -1,5 +1,5 @@
 export function validMobilePath(path:unknown):path is string {
- return typeof path==='string' && (path==='/claim'||/^\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/(frame(?:\/(?:full|focus))?|input|leave)$/.test(path));
+ return typeof path==='string' && (path==='/claim'||/^\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/(frame(?:\/(?:full|focus))?|input|hold|leave)$/.test(path));
 }
 export async function forwardMobileControl(payload:any,request:(path:string,body?:any)=>Promise<Response>){
  if(!payload||!validMobilePath(payload.path)||JSON.stringify(payload.body??null).length>16000)throw Error('Controle inválido.');
