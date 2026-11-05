@@ -154,3 +154,8 @@ já disponíveis; não simula controles futuros nem altera acessos automaticamen
 O resumo mensal usa a projeção compacta `summary: monthly` do gateway SLA: retorna
 somente totais por unidade e datas, sem transportar pedidos ou motoristas para a
 tela inicial. O recorte de unidades é aplicado antes dessa projeção.
+
+Operação da publicação: caso uma publicação exceda o timeout do runner, o Pages
+pode manter a implantação pendente no serviço. Nessa situação é necessário
+cancelar a implantação no Pages antes de repetir a publicação; não basta repetir
+o job do Actions. A versão publicada anteriormente permanece disponível.

@@ -34,21 +34,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Recover timed-out Pages deployment
-        uses: actions/github-script@v8
-        with:
-          script: |
-            // This exact deployment outlived the failed runner and blocked Pages.
-            const target = 'a74bff993c7047a9ec7efc675c3992e0d5af3a20';
-            const args = { ...context.repo, pages_deployment_id: target };
-            try {
-              await github.request('POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel', args);
-              core.notice('Cancelamento da publicação órfã solicitado.');
-              await new Promise(resolve => setTimeout(resolve, 5000));
-            } catch (error) {
-              if (error.status === 404) core.notice('Publicação anterior já indisponível para cancelamento.');
-              else core.setFailed('Não foi possível liberar a publicação anterior: HTTP ' + error.status);
-            }
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
