@@ -24,6 +24,10 @@ export function compileSlaQuery(q:any,scope?:UnitScope){
  const op=q.op||'select',table=ident(q.schema)+'.'+ident(q.table),alias='t';
  if(op==='select'?!reads[q.schema]?.includes(q.table):q.schema!=='public'||!writes[q.table]?.includes(op))return fail();
  let source=table;if(scope&&!scope.isAdmin){try{source=scopedSlaSource(q.table,scope,param);}catch{return fail();}}
+ if(q.summary!==undefined){
+  if(q.summary!=='monthly'||q.schema!=='public'||q.table!=='sla_days'||op!=='select')return fail();
+  source=`(SELECT s.date,s.source,s.total,s.entregues,s.updated_at,(SELECT jsonb_object_agg(u.key,jsonb_build_object('total',u.value->'total','entregues',u.value->'entregues')) FROM jsonb_each(COALESCE(s.by_unit,'{}'::jsonb)) u) AS by_unit FROM ${source} s)`;
+ }
  const select=(s:any)=>{if(s==='*')return 't.*';if(typeof s!=='string'||s.length>1200)return fail();return s.split(/,(?![^()]*\))/).map(c=>{if(c==='drivers(full_name)'&&q.schema==='app'&&['tickets','alerts'].includes(q.table))return '(SELECT jsonb_build_object(\'full_name\',d.full_name) FROM app.drivers d WHERE d.id=t.driver_id) AS drivers';return alias+'.'+ident(c)}).join(',')};
  if(!Array.isArray(q.filters)||q.filters.length>20||!Array.isArray(q.orders)||q.orders.length>5)return fail();
  const where=q.filters.map((f:any)=>{const c=alias+'.'+ident(f.column),operators:Record<string,string>={eq:'=',neq:'<>',gte:'>=',lte:'<=',gt:'>',lt:'<',like:'LIKE'};if(f.op==='is'){if(f.value!==null&&typeof f.value!=='boolean')return fail();return c+' IS '+(f.value===null?'NULL':f.value?'TRUE':'FALSE')}if(f.op==='in'){if(!Array.isArray(f.value)||!f.value.length||f.value.length>500)return fail();return c+' IN ('+f.value.map(param).join(',')+')'}if(!operators[f.op])return fail();return c+' '+operators[f.op]+' '+param(f.value)}).join(' AND ');

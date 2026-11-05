@@ -31,6 +31,8 @@ test('unit SQL isolates raw rows, totals, drivers with the same name, snapshots 
   assert.deepEqual((await run('tower_snapshots',scope))[0].drivers.map(d=>d.unit),[key]);assert.deepEqual((await run('tower_status',scope))[0].status,{});
   assert.equal((await run('orders',scope,{filters:[{column:'unit',op:'eq',value:key==='rbp'?'maua':'rbp'}],scope:{isAdmin:true},units:['maua','rbp']})).length,0);
  }
+ const lightweight=await run('sla_days',scoped(UNIT_LABELS[0]),{summary:'monthly'});assert.deepEqual(lightweight[0].by_unit,{maua:{total:10,entregues:7}});assert.ok(!JSON.stringify(lightweight).includes('Same driver'));assert.equal(lightweight[0].total,10);
+ const adminLight=await run('sla_days',unitScope({role:'Administrador',units:[]}),{summary:'monthly'});assert.deepEqual(Object.keys(adminLight[0].by_unit),['rbp','maua','maua2']);
  const multi=scoped(UNIT_LABELS[0],UNIT_LABELS[2]);assert.equal((await run('sla_days',multi))[0].total,40);assert.equal((await run('sla_drivers',multi)).reduce((sum,d)=>sum+d.total,0),40);
  assert.equal((await run('sla_days',scoped(...UNIT_LABELS)))[0].total,60);
  assert.equal((await run('sla_days',unitScope({role:'Administrador',units:[]})))[0].total,999);
@@ -44,4 +46,6 @@ test('nonadmin scope denies writes, Driver and robot APIs even when all units ar
   assert.equal(compileSlaQuery({schema:'public',rpc:'is_robot_admin',args:{}},scope).text,'SELECT false AS value');
  }
  assert.throws(()=>compileSlaQuery(q('sla_days'),scoped()));
+ assert.throws(()=>compileSlaQuery(q('orders',{summary:'monthly'}),scoped(UNIT_LABELS[0])));
+ assert.throws(()=>compileSlaQuery(q('sla_days',{summary:'arbitrary'}),scoped(UNIT_LABELS[0])));
 });
