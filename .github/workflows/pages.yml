@@ -42,18 +42,12 @@ jobs:
             const target = 'a74bff993c7047a9ec7efc675c3992e0d5af3a20';
             const args = { ...context.repo, pages_deployment_id: target };
             try {
-              const response = await github.request('GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}', args);
-              const pending = ['deployment_queued', 'deployment_in_progress', 'queued', 'in_progress', 'waiting'];
-              if (pending.includes(response.data.status)) {
-                await github.request('POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel', args);
-                for (let i = 0; i < 15; i++) {
-                  await new Promise(resolve => setTimeout(resolve, 2000));
-                  const current = await github.request('GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}', args);
-                  if (!pending.includes(current.data.status)) break;
-                }
-              }
+              await github.request('POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel', args);
+              core.notice('Cancelamento da publicação órfã solicitado.');
+              await new Promise(resolve => setTimeout(resolve, 5000));
             } catch (error) {
-              if (error.status !== 404) core.setFailed('Não foi possível liberar a publicação anterior: HTTP ' + error.status);
+              if (error.status === 404) core.notice('Publicação anterior já indisponível para cancelamento.');
+              else core.setFailed('Não foi possível liberar a publicação anterior: HTTP ' + error.status);
             }
       - name: Deploy
         id: deployment
