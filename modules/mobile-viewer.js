@@ -24,7 +24,7 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
  document.body.append(modal);const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';
  const img=modal.querySelector('.screen');
  const status=modal.querySelector('.pmj-status'),zoom=modal.querySelector('.zoom');
- const device=crypto.randomUUID();let id,closed=false,stopped=false,pointer=null,events=[],sending=false,pan=false,gesture=false;
+ const device=crypto.randomUUID();let id,closed=false,stopped=false,pointer=null,events=[],sending=false,pan=false,gesture=false,gesturePending=false;
  let frameTimer,inputTimer,lastPoint,lastHeartbeat=0,rect=null,gestureRect=null,full=false,frameFailures=0,epoch=0,leaving=Promise.resolve();
  const setStatus=(state,message)=>{modal.dataset.state=state;status.textContent=message;};
  const headers=async()=>{const result=await client.auth.getSession();if(!result.data?.session?.access_token)throw new Error('Entre novamente no dashboard.');return {Authorization:'Bearer '+result.data.session.access_token,'X-Control-ID':device,'Content-Type':'application/json'};};
@@ -36,19 +36,25 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
  async function leave(){if(id)try{await request('/'+id+'/leave',{});}catch{}}
  function finish(){if(closed)return leaving;closed=true;epoch++;clearTimeout(frameTimer);clearInterval(inputTimer);events=[];leaving=leave();modal.remove();document.body.style.overflow=previousOverflow;window.removeEventListener('pagehide',finish);document.removeEventListener('visibilitychange',visibility);onClose();return leaving;}
  closeCurrent=finish;
- function stop(message,done=false){stopped=true;epoch++;gesture=false;pointer=null;setStatus(done?'done':'error',message);img.style.pointerEvents='none';clearTimeout(frameTimer);clearInterval(inputTimer);events=[];leaving=leave();}
+ function stop(message,done=false){stopped=true;epoch++;gesture=false;gesturePending=false;pointer=null;setStatus(done?'done':'error',message);img.style.pointerEvents='none';clearTimeout(frameTimer);clearInterval(inputTimer);events=[];leaving=leave();}
  async function flush(){
   if(sending||!events.length||closed||stopped||!id)return;sending=true;const batch=events.splice(0,24),current=epoch;
-  try{await request('/'+id+'/input',{events:batch});}
+  try{await request('/'+id+'/input',{events:batch});if(current===epoch&&!gesture&&!events.some(e=>e.type==='down')&&batch.some(e=>e.type==='up'||e.type==='cancel'))gesturePending=false;}
   catch(error){if(current===epoch&&!closed)stop(error.status===410?'A validação terminou. Confira a atualização no painel.':'O gesto foi interrompido. Toque em Reconectar para continuar sem repetir o login.',error.status===410);}
   finally{sending=false;if(events.length&&!closed&&!stopped)void flush();}
  }
- function enqueue(e){if(closed||stopped||!id)return;if(events.length>=40){stop('Conexão lenta. Reconecte antes de continuar o desafio.');return;}events.push(e);if(e.type!=='move')void flush();}
+ function enqueue(e){
+  if(closed||stopped||!id)return;
+  // A posição mais recente substitui movimentos ainda não enviados; os limites do gesto permanecem na fila.
+  if(e.type==='move'&&events.at(-1)?.type==='move')events[events.length-1]=e;
+  else if(e.type!=='cancel'||events.at(-1)?.type!=='cancel')events.push(e);
+  if(e.type!=='move')void flush();
+ }
  function point(event,type){const r=img.getBoundingClientRect(),view=gestureRect||rect;const nx=Math.max(0,Math.min(1,(event.clientX-r.left)/r.width)),ny=Math.max(0,Math.min(1,(event.clientY-r.top)/r.height));lastPoint={type,x:view?(view.x+nx*view.width)/view.viewportWidth:nx,y:view?(view.y+ny*view.height)/view.viewportHeight:ny};lastHeartbeat=Date.now();return lastPoint;}
  for(const name of ['contextmenu','selectstart','dragstart'])img.addEventListener(name,e=>{e.preventDefault();e.stopPropagation();});
  img.addEventListener('touchstart',e=>{if(!pan)e.preventDefault();},{passive:false});
  img.addEventListener('touchmove',e=>{if(!pan)e.preventDefault();},{passive:false});
- img.addEventListener('pointerdown',e=>{if(pan||pointer!==null||stopped||!id||img.dataset.ready!=='true')return;e.preventDefault();pointer=e.pointerId;gesture=true;gestureRect=rect;img.setPointerCapture(pointer);enqueue(point(e,'down'));});
+ img.addEventListener('pointerdown',e=>{if(pan||pointer!==null||stopped||!id||img.dataset.ready!=='true')return;e.preventDefault();if(gesturePending){setStatus('connecting','Concluindo o gesto anterior…');return;}gesturePending=true;pointer=e.pointerId;gesture=true;gestureRect=rect;img.setPointerCapture(pointer);enqueue(point(e,'down'));});
  img.addEventListener('pointermove',e=>{if(e.pointerId===pointer&&!pan){e.preventDefault();enqueue(point(e,'move'));}});
  function release(e){if(e.pointerId!==pointer)return;e.preventDefault();enqueue(e.type==='pointerup'?point(e,'up'):{type:'cancel'});pointer=null;gesture=false;gestureRect=null;}
  img.addEventListener('pointerup',release);img.addEventListener('pointercancel',release);img.addEventListener('lostpointercapture',()=>{if(pointer!==null){pointer=null;gesture=false;gestureRect=null;enqueue({type:'cancel'});}});
@@ -81,7 +87,7 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
   frameTimer=setTimeout(()=>void frame(current),700);
  }
  async function connect(){
-  if(closed||sending)return;stopped=false;frameFailures=0;events=[];id=null;rect=null;gestureRect=null;const current=++epoch;clearTimeout(frameTimer);clearInterval(inputTimer);img.style.pointerEvents='none';setStatus('connecting','Conectando à sua sessão…');
+  if(closed||sending)return;stopped=false;gesturePending=false;frameFailures=0;events=[];id=null;rect=null;gestureRect=null;const current=++epoch;clearTimeout(frameTimer);clearInterval(inputTimer);img.style.pointerEvents='none';setStatus('connecting','Conectando à sua sessão…');
   try{
    await leaving;if(closed||current!==epoch)return;
    const deadline=Date.now()+120000;
