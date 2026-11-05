@@ -159,3 +159,9 @@ Operação da publicação: caso uma publicação exceda o timeout do runner, o 
 pode manter a implantação pendente no serviço. Nessa situação é necessário
 cancelar a implantação no Pages antes de repetir a publicação; não basta repetir
 o job do Actions. A versão publicada anteriormente permanece disponível.
+
+A tela Início também mostra o andamento de hoje (Brasília): volume, entregas,
+quantidade em aberto e taxa de entrega, com barra de progresso e horário dos
+dados do dia. Os indicadores mensais continuam abaixo, sem o cartão Dias com
+dados. O resumo diário usa os mesmos relatórios já consultados para o mês,
+sem requisição adicional e sem reutilizar dados de ontem quando hoje estiver vazio.

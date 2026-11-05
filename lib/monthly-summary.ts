@@ -22,3 +22,5 @@ export function monthlySummary(rows:any[],month:string){
  total.rate=total.volume?total.delivered/total.volume*100:0;
  total.units=[...units.values()].map(u=>({...u,rate:u.volume?u.delivered/u.volume*100:0}));total.sources=[...sources];return total;
 }
+
+export function dailySummary(rows:any[],date:string){return monthlySummary(rows.filter(row=>row.date?.slice(0,10)===date),date.slice(0,7))}
