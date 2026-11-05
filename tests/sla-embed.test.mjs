@@ -22,3 +22,15 @@ test('sandbox bridge checks parent/origin/channel, queues queries and never rece
  const answered=new Set();while(answered.size<10){for(const request of sent.filter(x=>x.type==='pllugo-sla-request'&&!answered.has(x.id))){answered.add(request.id);listeners.message({source:parent,origin:'https://pllugo-envios.github.io',data:{type:'pllugo-sla-result',channel:'channel-1',id:request.id,result:{data:[],error:null}}})}await new Promise(setImmediate)}
  await Promise.all(jobs);assert.ok(!JSON.stringify(sent).includes('Bearer'));
 });
+
+test('sandbox applies trusted unit options before releasing queries and blocks Driver navigation for managers',async()=>{
+ const sent=[],listeners={};const parent={postMessage:m=>sent.push(m)};
+ const makeSelect=()=>{const select={value:'all',options:[]};select.options=['all','maua','maua2','rbp','none'].map(value=>({value,textContent:value,remove(){select.options=select.options.filter(o=>o!==this)}}));return select};
+ const selects={'unit-filter':makeSelect(),'bm-filter-unit':makeSelect()};
+ const scope={URL,Map,Promise,setTimeout,clearTimeout,setInterval,clearInterval,document:{referrer:'https://pllugo-envios.github.io/pllugo-operacao/',querySelector:()=>({content:'scope-channel'}),getElementById:id=>selects[id],body:{classList:{toggle(){}}}},location:{hash:''},parent,addEventListener:(name,fn)=>listeners[name]=fn,scrollTo(){}};scope.window=scope;
+ vm.createContext(scope);vm.runInContext("let state={unit:'all'};const BM={filters:{unit:'all'}};function selectMode(mode){window.mode=mode}",scope);vm.runInContext(await readFile('modules/sla/bridge.js','utf8'),scope);
+ listeners.message({source:parent,origin:'https://pllugo-envios.github.io',data:{type:'pllugo-sla-init',channel:'scope-channel',user:{id:'manager'},scope:{isAdmin:false,allUnits:false,units:['rbp'],labels:['Ribeirão Pires']},view:'SLA:driver'}});
+ await scope.pllugoSlaReady;
+ for(const select of Object.values(selects)){assert.deepEqual(select.options.map(o=>o.value),['rbp']);assert.equal(select.value,'rbp')}
+ assert.equal(vm.runInContext('state.unit',scope),'rbp');assert.equal(vm.runInContext('BM.filters.unit',scope),'rbp');assert.equal(scope.mode,'geral');
+});

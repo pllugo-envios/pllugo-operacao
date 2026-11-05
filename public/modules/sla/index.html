@@ -925,7 +925,8 @@
       <span class="unit-filter-label">Unidade</span>
       <select id="unit-filter" class="unit-filter-select">
         <option value="all">Todas</option>
-        <option value="maua">Mauá</option>
+        <option value="maua">Mauá · Unidade 1</option>
+        <option value="maua2">Mauá · Unidade 2</option>
         <option value="rbp">Ribeirão Pires</option>
       </select>
     </div>
@@ -1296,7 +1297,8 @@
             </select>
             <select id="bm-filter-unit" aria-label="Unidade">
               <option value="all">Todas as unidades</option>
-              <option value="maua">Mauá</option>
+              <option value="maua">Mauá · Unidade 1</option>
+        <option value="maua2">Mauá · Unidade 2</option>
               <option value="rbp">Ribeirão Pires</option>
               <option value="none">Não identificada</option>
             </select>
@@ -1680,8 +1682,14 @@
  const queue=[];let active=0;
  function pump(){while(active<4&&queue.length){active++;queue.shift()()}}
  function request(payload){return ready.then(()=>new Promise(resolve=>{queue.push(()=>{const id=++seq;let settled=false;const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);pending.delete(id);active--;resolve(value);pump()},timer=setTimeout(()=>finish({data:null,error:{message:'O serviço demorou a responder. Tente novamente.'}}),45000);pending.set(id,finish);parent.postMessage({type:'pllugo-sla-request',channel,id,payload},hostOrigin)});pump()}))}
- addEventListener('message',event=>{if(event.source!==parent||event.origin!==hostOrigin||event.data?.channel!==channel)return;const m=event.data;if(m.type==='pllugo-sla-init'){identity=m.user;readyResolve();if(typeof selectMode==='function')navigate(m.view)}if(m.type==='pllugo-sla-result'){pending.get(m.id)?.(m.result);pending.delete(m.id)}if(m.type==='pllugo-sla-navigate')navigate(m.view)});
- function navigate(view){const mode=String(view||'SLA:geral').replace('SLA:','');if(mode===currentSelected)return;currentSelected=mode;const driver=mode==='driver';document.body.classList.toggle('driver-only',driver);if(!driver&&typeof selectMode==='function')selectMode(mode);if(driver&&typeof window.pllugoDriverInit==='function')window.pllugoDriverInit();window.scrollTo(0,0)}
+ addEventListener('message',event=>{if(event.source!==parent||event.origin!==hostOrigin||event.data?.channel!==channel)return;const m=event.data;if(m.type==='pllugo-sla-init'){identity=m.user;window.pllugoSlaScope=m.scope||{isAdmin:false,units:[],labels:[]};applyScope();readyResolve();if(typeof selectMode==='function')navigate(m.view)}if(m.type==='pllugo-sla-result'){pending.get(m.id)?.(m.result);pending.delete(m.id)}if(m.type==='pllugo-sla-navigate')navigate(m.view)});
+ function applyScope(){
+  const scope=window.pllugoSlaScope,units=scope.units||[];
+  for(const id of ['unit-filter','bm-filter-unit']){const select=document.getElementById?.(id);if(!select)continue;for(const option of [...select.options]){if(option.value==='all'){option.textContent=scope.allUnits?'Todas as unidades':'Unidades permitidas';if(units.length===1)option.remove()}else if(!units.includes(option.value)&&!(scope.isAdmin&&option.value==='none'))option.remove()}select.value=units.length===1?units[0]:'all'}
+  if(typeof state!=='undefined')state.unit=units.length===1?units[0]:'all';
+  if(typeof BM!=='undefined')BM.filters.unit=units.length===1?units[0]:'all';
+ }
+ function navigate(view){let mode=String(view||'SLA:geral').replace('SLA:','');if(mode==='driver'&&!window.pllugoSlaScope?.isAdmin)mode='geral';if(mode===currentSelected)return;currentSelected=mode;const driver=mode==='driver';document.body.classList.toggle('driver-only',driver);if(!driver&&typeof selectMode==='function')selectMode(mode);if(driver&&typeof window.pllugoDriverInit==='function')window.pllugoDriverInit();window.scrollTo(0,0)}
  class Query {
   constructor(schema,table){this.q={schema,table,op:'select',columns:'*',filters:[],orders:[],limit:1000,offset:0}}
   select(columns='*'){this.q.columns=columns;this.q.returning=true;return this}
@@ -3700,7 +3708,7 @@ function driversForCarrier(carrier, filtered, opts = {}) {
   })).sort((a, b) => b.sla - a.sla || b.total - a.total);
 }
 
-function unitLabel(u){ return u === 'maua' ? 'Mauá' : u === 'rbp' ? 'Ribeirão Pires' : 'Não identificada'; }
+function unitLabel(u){ return u === 'maua' ? 'Mauá · Unidade 1' : u === 'maua2' ? 'Mauá · Unidade 2' : u === 'rbp' ? 'Ribeirão Pires' : 'Não identificada'; }
 function filterHistoryPeriod(history){ return (history || []).filter(h => dateInRange(h.date)); }
 /* =====================================================================
    GESTÃO DE BASE v3 — camada de dados
@@ -4195,8 +4203,8 @@ function entityCardHtml(name, agg, action, note='') {
 }
 function renderUnitAndClientPerformance() {
   const ug=$('#unit-performance-grid'), cg=$('#client-performance-grid'); if(!ug||!cg)return;
-  const maua=aggregate(filterHistoryPeriod(historyForUnit('maua')), state.carrier), rbp=aggregate(filterHistoryPeriod(historyForUnit('rbp')), state.carrier);
-  ug.innerHTML=entityCardHtml('Mauá',maua,'unit:maua','importe dados da unidade')+entityCardHtml('Ribeirão Pires',rbp,'unit:rbp','importe dados da unidade');
+  const units=window.pllugoSlaScope?.units||['maua','maua2','rbp'];
+  ug.innerHTML=units.map(unit=>entityCardHtml(unitLabel(unit),aggregate(filterHistoryPeriod(historyForUnit(unit)),state.carrier),'unit:'+unit,'importe dados da unidade')).join('');
   const baseHist = state.unit==='all' ? DASH_DATA.history : historyForUnit(state.unit);
   const jt=aggregate(filterHistoryPeriod(baseHist),'jt_real'), im=aggregate(filterHistoryPeriod(baseHist),'imile');
   cg.innerHTML=entityCardHtml('J&T',jt,'carrier:jt_real')+entityCardHtml('iMile',im,'carrier:imile');
@@ -4215,7 +4223,7 @@ function renderCauses(agg,drivers) {
 }
 function renderPriorities(agg,drivers) {
   const box=$('#priority-grid'); if(!box)return; const items=[];
-  const unitAgg=[['Mauá',aggregate(filterHistoryPeriod(historyForUnit('maua')),state.carrier)],['Ribeirão Pires',aggregate(filterHistoryPeriod(historyForUnit('rbp')),state.carrier)]].filter(x=>x[1].labels.length);
+  const unitAgg=(window.pllugoSlaScope?.units||['maua','maua2','rbp']).map(unit=>[unitLabel(unit),aggregate(filterHistoryPeriod(historyForUnit(unit)),state.carrier)]).filter(x=>x[1].labels.length);
   const worstUnit=unitAgg.sort((a,b)=>a[1].sla-b[1].sla)[0]; if(worstUnit&&worstUnit[1].sla<TARGET_SLA) items.push([`${worstUnit[0]} abaixo da meta`,`${fmtPct(worstUnit[1].sla)} · gap ${(worstUnit[1].sla-TARGET_SLA).toFixed(1).replace('.',',')} p.p.`]);
   const baseHist=state.unit==='all'?DASH_DATA.history:historyForUnit(state.unit); const clients=[['J&T',aggregate(filterHistoryPeriod(baseHist),'jt_real')],['iMile',aggregate(filterHistoryPeriod(baseHist),'imile')]].filter(x=>x[1].labels.length); const worstClient=clients.sort((a,b)=>b[1].pendentes-a[1].pendentes)[0]; if(worstClient)items.push([`${worstClient[0]} concentra mais perdas`,`${fmt(worstClient[1].pendentes)} pedidos fora da regra no período.`]);
   const causes=buildCauseSummary(drivers); if(causes[0])items.push([`Principal causa: ${causes[0].name}`,`${fmt(causes[0].qty)} ocorrências registradas.`]);
@@ -4228,7 +4236,7 @@ function renderOperation(filtered, drivers) {
   const op = operationalMetrics(filtered, drivers);
   const cat = slaCategory(op.sla);
   const carrierLabels = { pllugo: 'Pllugo', jt: 'J&T', imile: 'iMile', jt_real: 'J&T' };
-  const unitName = state.unit === 'all' ? 'Todas as unidades' : unitLabel(state.unit);
+  const unitName = state.unit === 'all' ? (window.pllugoSlaScope&&!window.pllugoSlaScope.allUnits?'Unidades permitidas':'Todas as unidades') : unitLabel(state.unit);
   $('#operation-scope').textContent = `${unitName} · ${carrierLabels[state.carrier] || 'Pllugo'}`;
   $('#operation-sla').textContent = op.routeTotal ? op.sla.toFixed(1) : '0.0';
   const score = document.querySelector('.operation-score-value');
@@ -4326,6 +4334,7 @@ function towerDriversSignature(drivers) {
   ]).sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1])));
 }
 async function captureTowerSnapshot(){
+  if(window.pllugoSlaScope&&!window.pllugoSlaScope.isAdmin)return;
   // Sempre relê o banco primeiro — pode ter foto nova de outro dispositivo/
   // import desde a última leitura, e a Torre precisa comparar contra a foto
   // mais recente que existir, não só a que este navegador já viu.
@@ -5594,6 +5603,7 @@ function installMatureInteractions(){
 
 function playAlertTone(){if(!soundAlertsEnabled)return;try{const ctx=new(window.AudioContext||window.webkitAudioContext)(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.frequency.value=720;gain.gain.value=.035;osc.start();setTimeout(()=>{osc.stop();ctx.close()},180)}catch(e){}}
 async function detectTowerEscalations(){
+  if(window.pllugoSlaScope&&!window.pllugoSlaScope.isAdmin)return;
   if (!sb) return;
   const analysis=buildTowerAnalysis();
   const today=saoPauloToday();

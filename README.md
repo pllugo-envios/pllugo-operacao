@@ -115,3 +115,22 @@ confirmada no resultado do workflow antes de divulgar o endereço definitivo.
 - [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages)
 - [Segredos das Edge Functions](https://supabase.com/docs/guides/functions/secrets)
 - [Supabase Storage](https://supabase.com/docs/guides/storage)
+
+## Permissões por unidade — Operação e SLA
+
+Colaboradores e Gestão consultam somente as unidades marcadas no cadastro. Uma,
+duas ou três unidades são permitidas; Gestão com as três marcadas vê as três.
+Administrador tem acesso a todas, independentemente das marcações. Cadastros e
+atribuições existentes são preservados.
+
+O gateway calcula o escopo a partir da sessão validada, ignorando permissões
+enviadas pelo navegador. No SLA, aplica o recorte às linhas de pedidos, ao JSON
+por unidade, aos totais, aos motoristas e às fotografias da Torre antes de devolver
+a resposta. Dados históricos sem unidade identificada ficam fora da consulta
+restrita. Mauá Unidade 2 usa a chave própria `maua2`; não herda os dados da Unidade 1.
+
+A consulta de SLA é liberada também ao nível Operacional. Escritas em agregados
+compartilhados, notas globais da Torre, integração Driver e controle do robô
+continuam restritos à administração; não se salvam fotografias parciais sobre
+as fotografias gerais. As permissões pessoais das tarefas permanecem vigentes.
+Não foi necessário alterar RLS, schema, contas ou automações de importação.

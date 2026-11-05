@@ -5,8 +5,14 @@
  const queue=[];let active=0;
  function pump(){while(active<4&&queue.length){active++;queue.shift()()}}
  function request(payload){return ready.then(()=>new Promise(resolve=>{queue.push(()=>{const id=++seq;let settled=false;const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);pending.delete(id);active--;resolve(value);pump()},timer=setTimeout(()=>finish({data:null,error:{message:'O serviço demorou a responder. Tente novamente.'}}),45000);pending.set(id,finish);parent.postMessage({type:'pllugo-sla-request',channel,id,payload},hostOrigin)});pump()}))}
- addEventListener('message',event=>{if(event.source!==parent||event.origin!==hostOrigin||event.data?.channel!==channel)return;const m=event.data;if(m.type==='pllugo-sla-init'){identity=m.user;readyResolve();if(typeof selectMode==='function')navigate(m.view)}if(m.type==='pllugo-sla-result'){pending.get(m.id)?.(m.result);pending.delete(m.id)}if(m.type==='pllugo-sla-navigate')navigate(m.view)});
- function navigate(view){const mode=String(view||'SLA:geral').replace('SLA:','');if(mode===currentSelected)return;currentSelected=mode;const driver=mode==='driver';document.body.classList.toggle('driver-only',driver);if(!driver&&typeof selectMode==='function')selectMode(mode);if(driver&&typeof window.pllugoDriverInit==='function')window.pllugoDriverInit();window.scrollTo(0,0)}
+ addEventListener('message',event=>{if(event.source!==parent||event.origin!==hostOrigin||event.data?.channel!==channel)return;const m=event.data;if(m.type==='pllugo-sla-init'){identity=m.user;window.pllugoSlaScope=m.scope||{isAdmin:false,units:[],labels:[]};applyScope();readyResolve();if(typeof selectMode==='function')navigate(m.view)}if(m.type==='pllugo-sla-result'){pending.get(m.id)?.(m.result);pending.delete(m.id)}if(m.type==='pllugo-sla-navigate')navigate(m.view)});
+ function applyScope(){
+  const scope=window.pllugoSlaScope,units=scope.units||[];
+  for(const id of ['unit-filter','bm-filter-unit']){const select=document.getElementById?.(id);if(!select)continue;for(const option of [...select.options]){if(option.value==='all'){option.textContent=scope.allUnits?'Todas as unidades':'Unidades permitidas';if(units.length===1)option.remove()}else if(!units.includes(option.value)&&!(scope.isAdmin&&option.value==='none'))option.remove()}select.value=units.length===1?units[0]:'all'}
+  if(typeof state!=='undefined')state.unit=units.length===1?units[0]:'all';
+  if(typeof BM!=='undefined')BM.filters.unit=units.length===1?units[0]:'all';
+ }
+ function navigate(view){let mode=String(view||'SLA:geral').replace('SLA:','');if(mode==='driver'&&!window.pllugoSlaScope?.isAdmin)mode='geral';if(mode===currentSelected)return;currentSelected=mode;const driver=mode==='driver';document.body.classList.toggle('driver-only',driver);if(!driver&&typeof selectMode==='function')selectMode(mode);if(driver&&typeof window.pllugoDriverInit==='function')window.pllugoDriverInit();window.scrollTo(0,0)}
  class Query {
   constructor(schema,table){this.q={schema,table,op:'select',columns:'*',filters:[],orders:[],limit:1000,offset:0}}
   select(columns='*'){this.q.columns=columns;this.q.returning=true;return this}

@@ -5,7 +5,7 @@ import {compileSlaQuery,slaResult} from '../supabase/functions/pllugo-operacao/l
 import {SLA_VIEWS,canSla,isSlaView} from '../lib/app-modules.ts';
 const query=(table,extra={})=>({schema:'public',table,op:'select',columns:'*',filters:[],orders:[],limit:1000,offset:0,...extra});
 test('SLA module is available to managers/admins and only registered views are restored',()=>{
- assert.equal(canSla({role:'Supervisor'}),true);assert.equal(canSla({role:'Administrador'}),true);assert.equal(canSla({role:'Assistente'}),false);assert.equal(isSlaView('SLA:unknown'),false);assert.equal(SLA_VIEWS.length,5);
+ assert.equal(canSla({role:'Supervisor'}),true);assert.equal(canSla({role:'Administrador'}),true);assert.equal(canSla({role:'Assistente'}),true);assert.equal(isSlaView('SLA:unknown'),false);assert.equal(SLA_VIEWS.length,5);
 });
 test('query gateway rejects arbitrary SQL, unrelated schemas, unsafe mutations and unbounded pages',()=>{
  for(const q of [query('users'),query('users',{schema:'operacao'}),query('sla_days',{columns:'id; DROP TABLE public.sla_days'}),query('sla_days',{limit:1001}),query('sla_days',{orders:[{column:'date;select 1'}]}),query('sla_days',{filters:[{column:'date',op:'or',value:'true'}]}),query('sla_days',{op:'delete'}),query('sla_drivers',{op:'delete',filters:[{column:'date',op:'gte',value:'1900-01-01'}]}),{schema:'public',rpc:'arbitrary_sql',args:{}},query('orders',{op:'update',rows:[{unit:'x'}]})])assert.throws(()=>compileSlaQuery(q));

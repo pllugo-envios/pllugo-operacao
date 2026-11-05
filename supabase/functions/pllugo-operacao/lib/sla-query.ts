@@ -1,5 +1,7 @@
 // Allowlisted compatibility layer. Every statement runs as authenticated with
 // the existing SLA identity and RLS, never as service_role.
+import type {UnitScope} from './unit-scope.ts';
+import {scopedSlaSource} from './sla-scope.ts';
 const reads:Record<string,string[]>={public:['sla_days','sla_drivers','tower_snapshots','tower_status','orders','order_events','operational_orders','v_order_current_intelligence','driver_interventions','driver_profiles','robot_flow_status','robot_login_requests'],app:['bases','drivers','announcements','unmatched_aliases','tickets','ticket_events','alerts']};
 const writes:Record<string,string[]>={sla_days:['upsert'],sla_drivers:['upsert','delete'],tower_snapshots:['upsert'],tower_status:['upsert'],orders:['upsert'],order_events:['upsert'],operational_orders:['upsert'],import_batches:['insert','update'],driver_interventions:['insert']};
 const rpcs:Record<string,{args:Record<string,string>,scalar?:boolean}>={
@@ -10,12 +12,18 @@ const rpcs:Record<string,{args:Record<string,string>,scalar?:boolean}>={
 export class SlaQueryError extends Error{}
 const fail=()=>{throw new SlaQueryError('Solicitação SLA inválida ou não permitida.')};
 function ident(s:any){if(typeof s!=='string'||!/^[a-z][a-z0-9_]{0,62}$/.test(s))return fail();return '"'+s+'"'}
-export function compileSlaQuery(q:any){
+export function compileSlaQuery(q:any,scope?:UnitScope){
  if(!q||!['public','app'].includes(q.schema))return fail();const values:any[]=[];
  const param=(v:any)=>{if(v!==null&&!['string','number','boolean'].includes(typeof v))return fail();if(typeof v==='string'&&v.length>100000)return fail();values.push(v);return '$'+values.length};
+ if(scope&&!scope.isAdmin){
+   if(!scope.units.length)return fail();
+   if(q.rpc==='is_robot_admin'&&q.schema==='public')return {text:'SELECT false AS value',values,scalar:true,single:null,requiresRobot:false};
+   if(q.rpc||q.schema!=='public'||(q.op&&q.op!=='select'))return fail();
+ }
  if(q.rpc){const spec=rpcs[q.schema+'.'+q.rpc];if(!spec||!q.args||Array.isArray(q.args)||Object.keys(q.args).length>8)return fail();const args=Object.entries(q.args).map(([name,value])=>{const type=spec.args[name];if(!type)return fail();if(type==='uuid[]'){if(!Array.isArray(value)||value.length>100||value.some(v=>typeof v!=='string'||!/^[a-f0-9-]{36}$/i.test(v)))return fail();return ident(name)+' => ARRAY['+value.map(v=>param(v)+'::uuid').join(',')+']::uuid[]'}return ident(name)+' => '+param(value)+'::'+type});return {text:`SELECT ${spec.scalar?'':'* FROM '}${ident(q.schema)}.${ident(q.rpc)}(${args.join(',')})${spec.scalar?' AS value':''}`,values,scalar:!!spec.scalar,single:null,requiresRobot:q.rpc==='robot_request_jms_login'};}
  const op=q.op||'select',table=ident(q.schema)+'.'+ident(q.table),alias='t';
  if(op==='select'?!reads[q.schema]?.includes(q.table):q.schema!=='public'||!writes[q.table]?.includes(op))return fail();
+ let source=table;if(scope&&!scope.isAdmin){try{source=scopedSlaSource(q.table,scope,param);}catch{return fail();}}
  const select=(s:any)=>{if(s==='*')return 't.*';if(typeof s!=='string'||s.length>1200)return fail();return s.split(/,(?![^()]*\))/).map(c=>{if(c==='drivers(full_name)'&&q.schema==='app'&&['tickets','alerts'].includes(q.table))return '(SELECT jsonb_build_object(\'full_name\',d.full_name) FROM app.drivers d WHERE d.id=t.driver_id) AS drivers';return alias+'.'+ident(c)}).join(',')};
  if(!Array.isArray(q.filters)||q.filters.length>20||!Array.isArray(q.orders)||q.orders.length>5)return fail();
  const where=q.filters.map((f:any)=>{const c=alias+'.'+ident(f.column),operators:Record<string,string>={eq:'=',neq:'<>',gte:'>=',lte:'<=',gt:'>',lt:'<',like:'LIKE'};if(f.op==='is'){if(f.value!==null&&typeof f.value!=='boolean')return fail();return c+' IS '+(f.value===null?'NULL':f.value?'TRUE':'FALSE')}if(f.op==='in'){if(!Array.isArray(f.value)||!f.value.length||f.value.length>500)return fail();return c+' IN ('+f.value.map(param).join(',')+')'}if(!operators[f.op])return fail();return c+' '+operators[f.op]+' '+param(f.value)}).join(' AND ');
@@ -24,7 +32,7 @@ export function compileSlaQuery(q:any){
  if(op==='select'){
   const limit=q.limit??1000,offset=q.offset??0;if(!Number.isInteger(limit)||limit<1||limit>1000||!Number.isInteger(offset)||offset<0||offset>500000)return fail();
   const orders=q.orders.map((o:any)=>alias+'.'+ident(o.column)+(o.ascending===false?' DESC':' ASC')+(o.nullsFirst===true?' NULLS FIRST':' NULLS LAST'));
-  text=`SELECT ${select(q.columns||'*')} FROM ${table} t${filter}${orders.length?' ORDER BY '+orders.join(','):''} LIMIT ${limit} OFFSET ${offset}`;
+  text=`SELECT ${select(q.columns||'*')} FROM ${source} t${filter}${orders.length?' ORDER BY '+orders.join(','):''} LIMIT ${limit} OFFSET ${offset}`;
  }else if(op==='delete'){
   // Importer's replacement of one exact driver/day, never the legacy bulk reset.
   if(q.filters.length!==3||!['date','source','driver_name'].every(c=>q.filters.some((f:any)=>f.column===c&&f.op==='eq'&&typeof f.value==='string'&&f.value)))return fail();

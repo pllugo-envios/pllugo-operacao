@@ -9,7 +9,7 @@ export default function SlaModule({view,onExpired,onNavigate}:{view:string,onExp
  current.current=view;expired.current=onExpired;navigate.current=onNavigate;
  useEffect(()=>{
   const abort=new AbortController();setError('');setIdentity(null);setHtml('');setReady(false);
-  window.fetch(asset('/modules/sla/index.html')+'?v=20261105-mobile2',{signal:abort.signal,cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Não foi possível carregar o módulo SLA.');return r.text()}).then(text=>setHtml(text.replace('<head>','<head><base href="'+new URL(asset('/modules/sla/'),document.baseURI).href+'"><meta name="pllugo-channel" content="'+channel.current+'">'))).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
+  window.fetch(asset('/modules/sla/index.html')+'?v=20261105-unit-scope',{signal:abort.signal,cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Não foi possível carregar o módulo SLA.');return r.text()}).then(text=>setHtml(text.replace('<head>','<head><base href="'+new URL(asset('/modules/sla/'),document.baseURI).href+'"><meta name="pllugo-channel" content="'+channel.current+'">'))).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
   api('/api/sla',{signal:abort.signal}).then(async r=>{if(r.status===401)expired.current();if(!r.ok)throw Error(await r.text());return r.json()}).then(setIdentity).catch(e=>{if(e.name!=='AbortError')setError(e.message)});
   bootDeadline.current=setTimeout(()=>setError('O módulo demorou a abrir. Tente novamente.'),30000);
   return()=>{abort.abort();if(bootDeadline.current)clearTimeout(bootDeadline.current)};
@@ -21,7 +21,7 @@ export default function SlaModule({view,onExpired,onNavigate}:{view:string,onExp
    const m=event.data;if(event.source!==frame.current?.contentWindow||event.origin!=='null'||m?.channel!==channel.current)return;
    const target=frame.current!.contentWindow!;
    if(m.type==='pllugo-sla-view'){if(isSlaView(m.view)&&m.view!==current.current)navigate.current(m.view);return}
-   if(m.type==='pllugo-sla-ready'){target.postMessage({type:'pllugo-sla-init',channel:channel.current,user:identity.user,view:current.current},'*');setReady(true);return}
+   if(m.type==='pllugo-sla-ready'){target.postMessage({type:'pllugo-sla-init',channel:channel.current,user:identity.user,scope:identity.scope,view:current.current},'*');setReady(true);return}
    if(m.type!=='pllugo-sla-request'||!Number.isSafeInteger(m.id)||active>=8)return;active++;
    try{
     if(m.payload?.mobileOpen){
