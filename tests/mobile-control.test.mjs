@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFile} from 'node:fs/promises';
 import {forwardMobileControl,validMobilePath} from '../lib/mobile-control.ts';
+
+test('app instalado busca navegação atual sem cache e preserva aviso offline',async()=>{
+ const listeners={};let options,offline=false,result;
+ vm.runInNewContext(await readFile('public/sw.js','utf8'),{self:{addEventListener:(name,fn)=>listeners[name]=fn},Response,fetch:async(_,o)=>{options=o;if(offline)throw Error('offline');return new Response('versão atual');}});
+ const event={request:{mode:'navigate'},respondWith:r=>result=r};
+ listeners.fetch(event);assert.equal(await (await result).text(),'versão atual');assert.equal(options.cache,'no-store');
+ offline=true;listeners.fetch(event);assert.equal((await result).status,503);
+});
 
 test('ponte do controle aceita só rotas fixas e nunca encaminha URLs ou outros serviços',async()=>{
  for(const path of ['https://evil.test','//evil.test','/api/execute/jms','/../config','/claim?token=x','/123/frame'])assert.equal(validMobilePath(path),false);
