@@ -1,16 +1,42 @@
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {CLIENTS,clientSlug,clientLogo} from '../lib/clients.ts';
+import {createBrandMarkup} from '../lib/brand-markup.ts';
 export async function buildSla(){
  let html=await readFile('modules/sla/source.html','utf8');
+ const brandCatalog=Object.fromEntries(CLIENTS.map(name=>[name,{slug:clientSlug(name),logo:'../../'+clientLogo(name).replace(/^\//,'')}]));
  const replace=(from,to)=>{if(!html.includes(from))throw Error('SLA integration anchor changed: '+from.slice(0,80));html=html.replace(from,to)};
  replace('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>','<script src="vendor/chart-4.4.1.js"></script>');
  replace('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>','');
  replace('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>','<script>'+await readFile('modules/sla/bridge.js','utf8')+'</script>');
  const start=html.indexOf('const SUPABASE_URL ='),end=html.indexOf('var DASH_DATA =',start);if(start<0||end<0)throw Error('SLA auth adapter anchor changed');
  html=html.slice(0,start)+`const sb=window.pllugoSlaClient;
+const slaBrand=(${createBrandMarkup.toString()})(${JSON.stringify(brandCatalog)});
+function slaBrandText(value){return String(value??'').split(/(J&T|iMile|Pllugo|Anjun)/gi).map((part,i)=>i%2?slaBrand(part):escapeHTML(part)).join('')}
+document.querySelectorAll('[data-carrier]').forEach(button=>{button.innerHTML=slaBrand(button.dataset.carrier)});
 let workbookLoading;
 function ensureWorkbookLibrary(){return window.XLSX?Promise.resolve():(workbookLoading||=(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='vendor/xlsx-0.18.5.js';script.onload=resolve;script.onerror=()=>{workbookLoading=null;reject(Error('Não foi possível carregar o leitor de planilhas. Tente novamente.'))};document.head.appendChild(script)})))}
 async function workbookReady(){try{await ensureWorkbookLibrary();return true}catch(e){showToast(e.message,'Planilhas');return false}}
 `+html.slice(end);
+ const brandReplace=(from,to)=>{if(!html.includes(from))throw Error('SLA brand anchor changed: '+from.slice(0,80));html=html.replaceAll(from,to)};
+ brandReplace('${escapeHTML(d.carrier)}','${slaBrand(d.carrier)}');
+ brandReplace('${escapeHTML(found.carrier)}','${slaBrand(found.carrier)}');
+ brandReplace('${escapeHTML(d.carrier||\'Pllugo\')}','${slaBrand(d.carrier||\'Pllugo\')}');
+ brandReplace('class="entity-name">${escapeHTML(name)}','class="entity-name">${slaBrand(name)}');
+ brandReplace("escapeHTML(r.sourceLabel)","slaBrand(r.sourceLabel)");
+ brandReplace("escapeHTML(bmSourceLabel(order.source))","slaBrand(bmSourceLabel(order.source))");
+ brandReplace("escapeHTML(r.source||d.carrier||'Pllugo')","slaBrand(r.source||d.carrier||'Pllugo')");
+ brandReplace("$('#hero-label').textContent = `SLA ${carrierName} · ${periodLabel}`;","$('#hero-label').innerHTML = `SLA ${slaBrand(carrierName)} · ${escapeHTML(periodLabel)}`;");
+ brandReplace("$('#operation-scope').textContent = `${unitName} · ${carrierLabels[state.carrier] || 'Pllugo'}`;","$('#operation-scope').innerHTML = `${escapeHTML(unitName)} · ${slaBrand(carrierLabels[state.carrier] || 'Pllugo')}`;");
+ brandReplace('escapeHTML(f.name)','slaBrandText(f.name)');
+ // Only display labels change. Business values, filter keys and exports retain
+ // the original strings. Labels remain accessible and copyable as text.
+ brandReplace("$('#app-drawer-sub').textContent=sub||'—';","$('#app-drawer-sub').innerHTML=slaBrandText(sub||'—');");
+ brandReplace('escapeHTML(fmtLabel ? fmtLabel(e) : e.label)','slaBrand(fmtLabel ? fmtLabel(e) : e.label)');
+ brandReplace('escapeHTML(String(r.label))','slaBrand(String(r.label))');
+ replace('</body>',`<script>
+const originalQualityDisplay=renderDataQuality;
+renderDataQuality=function(...args){originalQualityDisplay(...args);for(const id of ['data-quality-title','data-quality-text']){const el=document.getElementById(id);if(el)el.innerHTML=slaBrandText(el.textContent)}};
+</script></body>`);
  replace('async function handleFilesSelected(fileList) {','async function handleFilesSelected(fileList) {\n  try{await ensureWorkbookLibrary()}catch(e){setImportStatus(e.message,\'err\');return}');
  replace('function exportBaseRows(rows, filename) {','async function exportBaseRows(rows, filename) {\n  if(!await workbookReady())return;');
  replace("$('#bm-export-backlog')?.addEventListener('click', () => {","$('#bm-export-backlog')?.addEventListener('click', async () => {\n    if(!await workbookReady())return;");
@@ -42,6 +68,13 @@ async function workbookReady(){try{await ensureWorkbookLibrary();return true}cat
  .container{max-width:none!important}.topbar{padding-top:8px!important;padding-bottom:8px!important}
  body{min-width:0!important}#pd-root{margin-top:12px!important}
  .filters,.carrier-tabs{position:static!important;top:auto!important;z-index:auto!important}
+ .sla-clientbadge{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;position:relative;box-sizing:border-box;width:66px;height:30px;padding:4px 7px;border:1px solid #eee;border-radius:6px;background:#fff;flex-shrink:0;letter-spacing:normal;text-transform:none}
+ .sla-clientmark{display:block;width:50px;height:20px;overflow:hidden;flex-shrink:0}.sla-clientbadge img{display:block;width:50px;height:20px;object-fit:contain;max-width:none}.sla-clientbadge.imile img{height:auto}
+ .sla-clientbadge.jt{background:#d72e39;border-color:#d72e39}.sla-clientbadge.imile{background:#f8fcff;border-color:#d9e8f5}.sla-clientbadge.pllugo{background:#fff8f8;border-color:#f2d4d6}.sla-clientbadge.anjun{background:#f6fcf8;border-color:#cce7d6}
+ .sla-clientname{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important}
+ .carrier-tabs .tab{display:flex;align-items:center;justify-content:center;min-width:82px;min-height:46px;padding:6px 10px}.carrier-tabs .tab.active .sla-clientbadge{box-shadow:0 0 0 2px #f04a4f22}
+ .carrier-tag:has(.sla-clientbadge){padding:0;background:transparent!important;line-height:1;vertical-align:middle}.hero-label,#operation-scope{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+ .tower-sub,.app-drawer-sub,.drawer-row small{line-height:2.2}.entity-name:has(.sla-clientbadge){line-height:1}.control-status-copy .sla-clientbadge,#robot-panel-body .sla-clientbadge{width:58px;height:25px;padding:3px 5px;margin:0 2px}.control-status-copy .sla-clientmark,#robot-panel-body .sla-clientmark{width:46px;height:18px}.control-status-copy .sla-clientbadge img,#robot-panel-body .sla-clientbadge img{width:46px;height:18px}.control-status-copy .sla-clientbadge.imile img,#robot-panel-body .sla-clientbadge.imile img{height:auto}
  #robot-panel{position:fixed!important;inset:12px 12px auto!important;width:auto!important;max-width:600px!important;margin:0 auto!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important;box-sizing:border-box!important;z-index:2500!important;overscroll-behavior:contain}
  #robot-panel-body>div{align-items:flex-start!important;gap:12px;flex-wrap:wrap}
  #robot-panel-body>div>div{flex:1 1 180px}#robot-panel-body span{white-space:normal!important;overflow-wrap:anywhere}#robot-panel-body button,#robot-panel-body a{white-space:normal!important;max-width:100%}
