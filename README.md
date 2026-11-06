@@ -175,7 +175,7 @@ PostgreSQL do PGlite para reproduzir o erro antigo e validar o isolamento corret
 
 Ao concluir a validação J&T no celular, o app troca o quadro de CAPTCHA por uma
 confirmação com **Voltar ao painel**. Antes de meio-dia, informa que somente o
-login foi validado e que os relatórios começam às 12h. O mesmo componente atende
+login foi validado e que os relatórios começam às 11h. O mesmo componente atende
 Mauá e Ribeirão. Fechar a confirmação atualiza o status e os dados do painel. Se a
 sessão desaparecer, o componente consulta o resultado antes de informar sucesso;
 erro confirmado continua oferecendo a recuperação, sem fingir acesso validado.
@@ -187,3 +187,9 @@ nova validação em outro acesso. O host carrega o controle por URL fixa da pró
 origem com versão única a cada abertura; downloads concorrentes compartilham a
 requisição em andamento. Não envia sessão/credencial na URL nem reutiliza um
 componente antigo após falha de rede. O estilo também acompanha a versão do controle.
+
+
+Agenda vigente dos quatro relatórios: disparo diário extra às **11h**, seguido de
+**12h, 12h35, 13h10…**, preservando a grade ancorada em meio-dia e o último
+disparo às **23h55**, no horário de Brasília. A validação manual J&T passa a
+executar o relatório completo a partir das 11h.
