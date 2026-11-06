@@ -1,8 +1,9 @@
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {CLIENTS,clientSlug,clientLogo} from '../lib/clients.ts';
 import {createBrandMarkup} from '../lib/brand-markup.ts';
+import {includeAnjun} from './build-sla-anjun.mjs';
 export async function buildSla(){
- let html=await readFile('modules/sla/source.html','utf8');
+ let html=includeAnjun(await readFile('modules/sla/source.html','utf8'));
  const brandCatalog=Object.fromEntries(CLIENTS.map(name=>[name,{slug:clientSlug(name),logo:'../../'+clientLogo(name).replace(/^\//,'')}]));
  const replace=(from,to)=>{if(!html.includes(from))throw Error('SLA integration anchor changed: '+from.slice(0,80));html=html.replace(from,to)};
  replace('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>','<script src="vendor/chart-4.4.1.js"></script>');
@@ -13,6 +14,7 @@ export async function buildSla(){
 const slaBrand=(${createBrandMarkup.toString()})(${JSON.stringify(brandCatalog)});
 function slaBrandText(value){return String(value??'').split(/(J&T|iMile|Pllugo|Anjun)/gi).map((part,i)=>i%2?slaBrand(part):escapeHTML(part)).join('')}
 document.querySelectorAll('[data-carrier]').forEach(button=>{button.innerHTML=slaBrand(button.dataset.carrier)});
+document.getElementById('anjun-awaiting-panel')?.insertAdjacentHTML('afterbegin',slaBrand('Anjun'));
 let workbookLoading;
 function ensureWorkbookLibrary(){return window.XLSX?Promise.resolve():(workbookLoading||=(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='vendor/xlsx-0.18.5.js';script.onload=resolve;script.onerror=()=>{workbookLoading=null;reject(Error('Não foi possível carregar o leitor de planilhas. Tente novamente.'))};document.head.appendChild(script)})))}
 async function workbookReady(){try{await ensureWorkbookLibrary();return true}catch(e){showToast(e.message,'Planilhas');return false}}
@@ -68,6 +70,10 @@ renderDataQuality=function(...args){originalQualityDisplay(...args);for(const id
  .container{max-width:none!important}.topbar{padding-top:8px!important;padding-bottom:8px!important}
  body{min-width:0!important}#pd-root{margin-top:12px!important}
  .filters,.carrier-tabs{position:static!important;top:auto!important;z-index:auto!important}
+ #anjun-awaiting-panel{padding:32px 24px;border:1px solid #cce7d6;border-radius:16px;background:#f8fcfa;margin:12px 0 24px}#anjun-awaiting-panel h2{font-size:20px;margin:18px 0 10px;color:#345846}#anjun-awaiting-panel p{font-size:13px;line-height:1.7;color:#727c76;max-width:540px}
+ body.anjun-awaiting main>.container>:not(.mode-tabs):not(.carrier-tabs):not(#data-quality-banner):not(#anjun-awaiting-panel){display:none!important}
+ body.anjun-awaiting #data-quality-banner{display:none!important}
+ body.anjun-awaiting #gael-root,body.anjun-awaiting #gael-dock{display:none!important}
  .sla-clientbadge{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;position:relative;box-sizing:border-box;width:66px;height:30px;padding:4px 7px;border:1px solid #eee;border-radius:6px;background:#fff;flex-shrink:0;letter-spacing:normal;text-transform:none}
  .sla-clientmark{display:block;width:50px;height:20px;overflow:hidden;flex-shrink:0}.sla-clientbadge img{display:block;width:50px;height:20px;object-fit:contain;max-width:none}.sla-clientbadge.imile img{height:auto}
  .sla-clientbadge.jt{background:#d72e39;border-color:#d72e39}.sla-clientbadge.imile{background:#f8fcff;border-color:#d9e8f5}.sla-clientbadge.pllugo{background:#fff8f8;border-color:#f2d4d6}.sla-clientbadge.anjun{background:#f6fcf8;border-color:#cce7d6}
@@ -78,7 +84,7 @@ renderDataQuality=function(...args){originalQualityDisplay(...args);for(const id
  #robot-panel{position:fixed!important;inset:12px 12px auto!important;width:auto!important;max-width:600px!important;margin:0 auto!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important;box-sizing:border-box!important;z-index:2500!important;overscroll-behavior:contain}
  #robot-panel-body>div{align-items:flex-start!important;gap:12px;flex-wrap:wrap}
  #robot-panel-body>div>div{flex:1 1 180px}#robot-panel-body span{white-space:normal!important;overflow-wrap:anywhere}#robot-panel-body button,#robot-panel-body a{white-space:normal!important;max-width:100%}
- @media(max-width:600px){.topbar-inner{flex-wrap:wrap!important}.topbar-right{flex-wrap:wrap!important}.filters-inner{flex-wrap:wrap!important}}
+ @media(max-width:600px){.topbar-inner{flex-wrap:wrap!important}.topbar-right{flex-wrap:wrap!important}.filters-inner{flex-wrap:wrap!important}.carrier-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.carrier-tabs .tab{min-width:0;padding:6px 2px}.carrier-tabs .sla-clientbadge{width:100%;max-width:66px;padding:4px}}
  </style></head>`);
  await mkdir('public/modules/sla',{recursive:true});await writeFile('public/modules/sla/index.html',html);
 }

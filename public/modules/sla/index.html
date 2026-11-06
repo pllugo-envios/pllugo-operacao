@@ -839,6 +839,10 @@
  .container{max-width:none!important}.topbar{padding-top:8px!important;padding-bottom:8px!important}
  body{min-width:0!important}#pd-root{margin-top:12px!important}
  .filters,.carrier-tabs{position:static!important;top:auto!important;z-index:auto!important}
+ #anjun-awaiting-panel{padding:32px 24px;border:1px solid #cce7d6;border-radius:16px;background:#f8fcfa;margin:12px 0 24px}#anjun-awaiting-panel h2{font-size:20px;margin:18px 0 10px;color:#345846}#anjun-awaiting-panel p{font-size:13px;line-height:1.7;color:#727c76;max-width:540px}
+ body.anjun-awaiting main>.container>:not(.mode-tabs):not(.carrier-tabs):not(#data-quality-banner):not(#anjun-awaiting-panel){display:none!important}
+ body.anjun-awaiting #data-quality-banner{display:none!important}
+ body.anjun-awaiting #gael-root,body.anjun-awaiting #gael-dock{display:none!important}
  .sla-clientbadge{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;position:relative;box-sizing:border-box;width:66px;height:30px;padding:4px 7px;border:1px solid #eee;border-radius:6px;background:#fff;flex-shrink:0;letter-spacing:normal;text-transform:none}
  .sla-clientmark{display:block;width:50px;height:20px;overflow:hidden;flex-shrink:0}.sla-clientbadge img{display:block;width:50px;height:20px;object-fit:contain;max-width:none}.sla-clientbadge.imile img{height:auto}
  .sla-clientbadge.jt{background:#d72e39;border-color:#d72e39}.sla-clientbadge.imile{background:#f8fcff;border-color:#d9e8f5}.sla-clientbadge.pllugo{background:#fff8f8;border-color:#f2d4d6}.sla-clientbadge.anjun{background:#f6fcf8;border-color:#cce7d6}
@@ -849,7 +853,7 @@
  #robot-panel{position:fixed!important;inset:12px 12px auto!important;width:auto!important;max-width:600px!important;margin:0 auto!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important;box-sizing:border-box!important;z-index:2500!important;overscroll-behavior:contain}
  #robot-panel-body>div{align-items:flex-start!important;gap:12px;flex-wrap:wrap}
  #robot-panel-body>div>div{flex:1 1 180px}#robot-panel-body span{white-space:normal!important;overflow-wrap:anywhere}#robot-panel-body button,#robot-panel-body a{white-space:normal!important;max-width:100%}
- @media(max-width:600px){.topbar-inner{flex-wrap:wrap!important}.topbar-right{flex-wrap:wrap!important}.filters-inner{flex-wrap:wrap!important}}
+ @media(max-width:600px){.topbar-inner{flex-wrap:wrap!important}.topbar-right{flex-wrap:wrap!important}.filters-inner{flex-wrap:wrap!important}.carrier-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.carrier-tabs .tab{min-width:0;padding:6px 2px}.carrier-tabs .sla-clientbadge{width:100%;max-width:66px;padding:4px}}
  </style></head>
 <body>
 
@@ -957,6 +961,7 @@
       <button class="tab active" data-carrier="pllugo">Pllugo</button>
       <button class="tab" data-carrier="jt_real">J&T</button>
       <button class="tab" data-carrier="imile">iMile</button>
+      <button class="tab" data-carrier="anjun">Anjun</button>
     </div>
 
     <div class="control-status" id="data-quality-banner">
@@ -968,6 +973,7 @@
       <span class="control-status-pill" id="data-quality-pill">—</span>
     </div>
 
+    <section id="anjun-awaiting-panel" hidden aria-live="polite"><h2>Aguardando dados da Anjun</h2><p>O canal está preparado para receber os relatórios. Nenhum dado foi importado para esta unidade e período.</p></section>
     <div class="hero" id="hero-section">
       <div class="hero-main">
         <div class="hero-label" id="hero-label">SLA Pllugo - Hoje</div>
@@ -1029,7 +1035,7 @@
         <div class="entity-grid" id="unit-performance-grid"></div>
       </div>
       <div class="section overview-panel">
-        <div class="section-header"><div><div class="section-title">Performance por cliente</div><div class="section-sub">J&T e iMile ponderados pelo volume</div></div></div>
+        <div class="section-header"><div><div class="section-title">Performance por cliente</div><div class="section-sub">J&T, iMile e Anjun ponderados pelo volume</div></div></div>
         <div class="entity-grid" id="client-performance-grid"></div>
       </div>
     </div>
@@ -1745,6 +1751,7 @@ const slaBrand=(function createBrandMarkup(catalog                              
 })({"J&T":{"slug":"jt","logo":"../../brands/jt.png"},"iMile":{"slug":"imile","logo":"../../brands/imile.png"},"Pllugo":{"slug":"pllugo","logo":"../../brands/pllugo.png"},"Anjun":{"slug":"anjun","logo":"../../brands/anjun.svg"}});
 function slaBrandText(value){return String(value??'').split(/(J&T|iMile|Pllugo|Anjun)/gi).map((part,i)=>i%2?slaBrand(part):escapeHTML(part)).join('')}
 document.querySelectorAll('[data-carrier]').forEach(button=>{button.innerHTML=slaBrand(button.dataset.carrier)});
+document.getElementById('anjun-awaiting-panel')?.insertAdjacentHTML('afterbegin',slaBrand('Anjun'));
 let workbookLoading;
 function ensureWorkbookLibrary(){return window.XLSX?Promise.resolve():(workbookLoading||=(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='vendor/xlsx-0.18.5.js';script.onload=resolve;script.onerror=()=>{workbookLoading=null;reject(Error('Não foi possível carregar o leitor de planilhas. Tente novamente.'))};document.head.appendChild(script)})))}
 async function workbookReady(){try{await ensureWorkbookLibrary();return true}catch(e){showToast(e.message,'Planilhas');return false}}
@@ -2585,6 +2592,7 @@ function processImile(rows) {
 // Retorna lista de {source, date, data} pra um arquivo.
 // ──────────────────────────────────────────────
 function classifyAndProcess(filename, rows) {
+  if(/anjun/i.test(String(filename)))throw Error('O importador Anjun será configurado após a definição do portal e do formato dos relatórios.');
   const name = lc(filename);
   const results = [];
   const knowledgeKind = detectOrderKnowledgeReport(filename, rows);
@@ -2632,10 +2640,10 @@ function classifyAndProcess(filename, rows) {
 // ──────────────────────────────────────────────
 // SUPABASE — leitura (monta o formato DASH_DATA.history que o render já espera)
 // ──────────────────────────────────────────────
-function mergePllugo(jt, imile) {
+function mergePllugo(jt, imile, anjun) {
   let t = 0, e = 0, p = 0, pr = 0, exc = 0, recebidos = 0, hasRecebidos = false, rotaTotal = 0, rotaEntregues = 0, rotaPendentes = 0;
   const pedidos = [];
-  for (const src of [jt, imile]) {
+  for (const src of [jt, imile, anjun]) {
     if (!src) continue;
     t += src.total; e += src.entregues; p += src.pendentes; pr += (src.problematicos || 0);
     exc += (src.desconsiderados || 0);
@@ -2708,7 +2716,7 @@ async function fetchHistoryFromSupabase() {
   const byDate = new Map();
   let latestUpdate = null;
   for (const row of daysData) {
-    if (!byDate.has(row.date)) byDate.set(row.date, { date: row.date, jt: null, imile: null, jt_real: null });
+    if (!byDate.has(row.date)) byDate.set(row.date, { date: row.date, jt: null, imile: null, jt_real: null, anjun: null });
     const entry = byDate.get(row.date);
     const src = {
       total: row.total, entregues: row.entregues, pendentes: row.pendentes,
@@ -2733,7 +2741,7 @@ async function fetchHistoryFromSupabase() {
   }
 
   const history = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
-  for (const day of history) day.pllugo = mergePllugo(day.jt_real || day.jt, day.imile);
+  for (const day of history) day.pllugo = mergePllugo(day.jt_real || day.jt, day.imile, day.anjun);
   return { history, generated_at: latestUpdate };
 }
 
@@ -2753,7 +2761,7 @@ function mergeUnitBreakdownRows(rows) {
     src.rota_pendentes = unitSummary.rota_pendentes;
     changed = true;
   }
-  if (changed) for (const day of DASH_DATA.history) day.pllugo = mergePllugo(day.jt_real || day.jt, day.imile);
+  if (changed) for (const day of DASH_DATA.history) day.pllugo = mergePllugo(day.jt_real || day.jt, day.imile, day.anjun);
   return changed;
 }
 
@@ -2763,7 +2771,7 @@ function unitBreakdownMissingForCurrentRange() {
   if (!state || !state.unit) return [];
   return DASH_DATA.history
     .filter(day => dateInRange(day.date))
-    .filter(day => ['jt', 'imile', 'jt_real'].some(src => day[src] && !day[src].by_unit))
+    .filter(day => ['jt', 'imile', 'jt_real', 'anjun'].some(src => day[src] && !day[src].by_unit))
     .map(day => day.date);
 }
 async function ensureUnitBreakdownForCurrentRange() {
@@ -3408,15 +3416,15 @@ function computeUnitBreakdown(filename, rows) {
 function historyForUnit(unit) {
   if (!unit || unit === 'all') return DASH_DATA.history;
   const history = DASH_DATA.history.map(day => {
-    const scoped = { date: day.date, jt: null, imile: null, jt_real: null };
-    for (const src of ['jt', 'imile', 'jt_real']) {
+    const scoped = { date: day.date, jt: null, imile: null, jt_real: null, anjun: null };
+    for (const src of ['jt', 'imile', 'jt_real', 'anjun']) {
       const d = day[src];
       const u = d && d.by_unit && d.by_unit[unit];
       if (u) scoped[src] = u;
     }
     return scoped;
-  }).filter(day => day.jt || day.imile || day.jt_real);
-  for (const day of history) day.pllugo = mergePllugo(day.jt_real || day.jt, day.imile);
+  }).filter(day => day.jt || day.imile || day.jt_real || day.anjun);
+  for (const day of history) day.pllugo = mergePllugo(day.jt_real || day.jt, day.imile, day.anjun);
   return history;
 }
 // Mapa nome-do-motorista -> unidade pra UM dia, derivado do mesmo by_unit
@@ -3426,7 +3434,7 @@ function historyForUnit(unit) {
 // unidade acontece depois, na leitura (buildTowerAnalysis).
 function unitMapForDay(day) {
   const map = {};
-  for (const src of [day.jt_real || day.jt, day.imile]) {
+  for (const src of [day.jt_real || day.jt, day.imile, day.anjun]) {
     if (!src || !src.by_unit) continue;
     for (const [unit, u] of Object.entries(src.by_unit)) {
       for (const d of (u.drivers || [])) map[normalizeDriverName(d.name)] = unit;
@@ -3516,13 +3524,15 @@ function sourceForDay(day, carrier) {
   if (carrier === 'jt') return day.jt;
   if (carrier === 'jt_real') return day.jt_real || day.jt;
   if (carrier === 'imile') return day.imile;
+  if (carrier === 'anjun') return day.anjun;
   return null;
 }
 
 function operationalSourceForDay(day, carrier) {
-  if (carrier === 'pllugo') return mergePllugo(day.jt, day.imile);
+  if (carrier === 'pllugo') return mergePllugo(day.jt, day.imile, day.anjun);
   if (carrier === 'jt' || carrier === 'jt_real') return day.jt;
   if (carrier === 'imile') return day.imile;
+  if (carrier === 'anjun') return day.anjun;
   return null;
 }
 
@@ -3617,6 +3627,7 @@ function displayDriverName(name) {
 function carrierClass(label) {
   if (label === 'J&T') return 'jt';
   if (label === 'Pllugo') return 'pllugo';
+  if (label === 'Anjun') return 'anjun';
   return 'imile';
 }
 
@@ -3666,6 +3677,7 @@ function driversForCarrier(carrier, filtered, opts = {}) {
     if (carrier === 'pllugo' && jtForDrivers) sources.push({ list: jtForDrivers.drivers, carrier: 'J&T' });
     if ((carrier === 'jt' || carrier === 'jt_real') && jtForDrivers) sources.push({ list: jtForDrivers.drivers, carrier: 'J&T' });
     if ((carrier === 'pllugo' || carrier === 'imile') && day.imile) sources.push({ list: day.imile.drivers, carrier: 'iMile' });
+    if ((carrier === 'pllugo' || carrier === 'anjun') && day.anjun) sources.push({ list: day.anjun.drivers || [], carrier: 'Anjun' });
     for (const s of sources) {
       for (const d of s.list) {
         const k = carrier === 'pllugo' ? normalizeDriverName(d.name) : `${s.carrier}|${d.name}`;
@@ -3781,6 +3793,7 @@ function selectedDateBounds() {
 function baseSourceMatches(row) {
   const src = String(row.source || '').toLowerCase();
   if (state.carrier === 'imile') return src.includes('imile');
+  if (state.carrier === 'anjun') return src.includes('anjun');
   if (state.carrier === 'jt' || state.carrier === 'jt_real') return src === 'jt' || src.includes('j&t');
   return true;
 }
@@ -3883,6 +3896,7 @@ function bmMotherEvents(rows, parentKeys) {
 function bmSourceLabel(src) {
   const s = String(src || '').toLowerCase();
   if (s.includes('imile')) return 'iMile';
+  if (s.includes('anjun')) return 'Anjun';
   if (s === 'jt' || s.includes('j&t') || s.includes('jt')) return 'J&T';
   return src || 'Outro';
 }
@@ -4129,6 +4143,7 @@ function buildBaseSummary(orders, events, bounds) {
 }
 
 async function refreshBaseKnowledge(force = false) {
+  if(state.carrier==='anjun'&&!filteredHistory().some(day=>day.anjun))return;
   if (!sb) return;
   const bounds = selectedDateBounds();
   const key = bounds.start + '|' + bounds.end + '|' + state.unit + '|' + state.carrier;
@@ -4202,7 +4217,7 @@ function renderDataQuality(filtered) {
     txt.textContent='J&T está usando o Monitoramento de bipagem enquanto o relatório Entrega/SLA não chegou. Quando o Entrega for importado, ele assume automaticamente a Visão Geral.';
     pill.textContent='PRÉVIA'; return;
   }
-  const sources=new Set(); for(const d of filtered){ if(d.jt_real||d.jt)sources.add('J&T'); if(d.imile)sources.add('iMile'); }
+  const sources=new Set(); for(const d of filtered){ if(d.jt_real||d.jt)sources.add('J&T'); if(d.imile)sources.add('iMile'); if(d.anjun)sources.add('Anjun'); }
   if (state.carrier==='pllugo' && filtered.length && sources.size<2) { banner.classList.add('warn'); title.textContent='Visão Pllugo parcial'; txt.textContent=`Fontes encontradas: ${[...sources].join(' + ') || 'nenhuma'}. O SLA consolidado pode estar incompleto.`; pill.textContent='PARCIAL'; return; }
   title.textContent='Base consistente para a visão selecionada'; txt.textContent='Exclusões ficam auditáveis e fora da base elegível; alertas da Torre dependem de snapshots sucessivos.'; pill.textContent='OK';
 }
@@ -4225,7 +4240,7 @@ function renderUnitAndClientPerformance() {
   ug.innerHTML=units.map(unit=>entityCardHtml(unitLabel(unit),aggregate(filterHistoryPeriod(historyForUnit(unit)),state.carrier),'unit:'+unit,'importe dados da unidade')).join('');
   const baseHist = state.unit==='all' ? DASH_DATA.history : historyForUnit(state.unit);
   const jt=aggregate(filterHistoryPeriod(baseHist),'jt_real'), im=aggregate(filterHistoryPeriod(baseHist),'imile');
-  cg.innerHTML=entityCardHtml('J&T',jt,'carrier:jt_real')+entityCardHtml('iMile',im,'carrier:imile');
+  cg.innerHTML=entityCardHtml('J&T',jt,'carrier:jt_real')+entityCardHtml('iMile',im,'carrier:imile')+entityCardHtml('Anjun',aggregate(filterHistoryPeriod(baseHist),'anjun'),'carrier:anjun');
   $$('.entity-card[data-action]').forEach(el=>el.addEventListener('click',()=>{ const [kind,val]=el.dataset.action.split(':'); if(kind==='unit'){state.unit=val;$('#unit-filter').value=val;refresh();} else {selectCarrier(val);} }));
 }
 function buildCauseSummary(drivers) {
@@ -4243,7 +4258,7 @@ function renderPriorities(agg,drivers) {
   const box=$('#priority-grid'); if(!box)return; const items=[];
   const unitAgg=(window.pllugoSlaScope?.units||['maua','maua2','rbp']).map(unit=>[unitLabel(unit),aggregate(filterHistoryPeriod(historyForUnit(unit)),state.carrier)]).filter(x=>x[1].labels.length);
   const worstUnit=unitAgg.sort((a,b)=>a[1].sla-b[1].sla)[0]; if(worstUnit&&worstUnit[1].sla<TARGET_SLA) items.push([`${worstUnit[0]} abaixo da meta`,`${fmtPct(worstUnit[1].sla)} · gap ${(worstUnit[1].sla-TARGET_SLA).toFixed(1).replace('.',',')} p.p.`]);
-  const baseHist=state.unit==='all'?DASH_DATA.history:historyForUnit(state.unit); const clients=[['J&T',aggregate(filterHistoryPeriod(baseHist),'jt_real')],['iMile',aggregate(filterHistoryPeriod(baseHist),'imile')]].filter(x=>x[1].labels.length); const worstClient=clients.sort((a,b)=>b[1].pendentes-a[1].pendentes)[0]; if(worstClient)items.push([`${worstClient[0]} concentra mais perdas`,`${fmt(worstClient[1].pendentes)} pedidos fora da regra no período.`]);
+  const baseHist=state.unit==='all'?DASH_DATA.history:historyForUnit(state.unit); const clients=[['J&T',aggregate(filterHistoryPeriod(baseHist),'jt_real')],['iMile',aggregate(filterHistoryPeriod(baseHist),'imile')],['Anjun',aggregate(filterHistoryPeriod(baseHist),'anjun')]].filter(x=>x[1].labels.length); const worstClient=clients.sort((a,b)=>b[1].pendentes-a[1].pendentes)[0]; if(worstClient)items.push([`${worstClient[0]} concentra mais perdas`,`${fmt(worstClient[1].pendentes)} pedidos fora da regra no período.`]);
   const causes=buildCauseSummary(drivers); if(causes[0])items.push([`Principal causa: ${causes[0].name}`,`${fmt(causes[0].qty)} ocorrências registradas.`]);
   const tower=buildTowerAnalysis().filter(x=>x.status==='critical'||x.status==='risk'); if(tower.length)items.push([`${tower.length} motorista(s) exigem ação agora`,`${fmt(tower.reduce((s,x)=>s+x.pendentes,0))} pedidos pendentes concentrados nesses alertas.`]);
   if(!items.length)items.push(['Operação sem prioridade crítica detectada','Continue acompanhando a evolução e a completude dos dados.']);
@@ -4253,7 +4268,7 @@ function renderPriorities(agg,drivers) {
 function renderOperation(filtered, drivers) {
   const op = operationalMetrics(filtered, drivers);
   const cat = slaCategory(op.sla);
-  const carrierLabels = { pllugo: 'Pllugo', jt: 'J&T', imile: 'iMile', jt_real: 'J&T' };
+  const carrierLabels = { pllugo: 'Pllugo', jt: 'J&T', imile: 'iMile', jt_real: 'J&T', anjun: 'Anjun' };
   const unitName = state.unit === 'all' ? (window.pllugoSlaScope&&!window.pllugoSlaScope.allUnits?'Unidades permitidas':'Todas as unidades') : unitLabel(state.unit);
   $('#operation-scope').innerHTML = `${escapeHTML(unitName)} · ${slaBrand(carrierLabels[state.carrier] || 'Pllugo')}`;
   $('#operation-sla').textContent = op.routeTotal ? op.sla.toFixed(1) : '0.0';
@@ -4334,6 +4349,7 @@ function towerDriverRowsForDay(day) {
   };
   addSource(day.jt, 'J&T');
   addSource(day.imile, 'iMile');
+  addSource(day.anjun, 'Anjun');
   return [...map.values()].map(d => ({ ...d, sla: d.total ? round1(100 * d.delivered / d.total) : 0 }));
 }
 function towerDriverKey(d) {
@@ -4388,6 +4404,7 @@ function towerStatusLabel(s){return s==='critical'?'Crítico':s==='risk'?'Em ris
 function carrierOkForTower(d) {
   if (state.carrier === 'jt' || state.carrier === 'jt_real') return d.carrier === 'J&T';
   if (state.carrier === 'imile') return d.carrier === 'iMile';
+  if (state.carrier === 'anjun') return d.carrier === 'Anjun';
   return true;
 }
 const UI_REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -5492,7 +5509,7 @@ function openCockpitDrill(type){
 function towerDriverHistory(driver){
   const unitHistory=driver.unit?historyForUnit(driver.unit):DASH_DATA.history;
   const hist=[...unitHistory].filter(h=>h.date<=saoPauloToday()).sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
-  const carrier=driver.carrier==='J&T'?'jt':driver.carrier==='iMile'?'imile':'pllugo';
+  const carrier=driver.carrier==='J&T'?'jt':driver.carrier==='iMile'?'imile':driver.carrier==='Anjun'?'anjun':'pllugo';
   const rows=driversForCarrier(carrier,hist,{operationalJt:true});
   return rows.find(x=>normalizeDriverName(x.name)===normalizeDriverName(driver.name))||null;
 }
@@ -5643,7 +5660,7 @@ function renderAllV2(agg,drivers,filtered){renderDataQuality(filtered);renderExe
 
 function renderHero(agg, drivers) {
   const cat = slaCategory(agg.sla);
-  const carrierLabels = { pllugo: 'Pllugo', jt: 'J&T', imile: 'iMile', jt_real: 'J&T' };
+  const carrierLabels = { pllugo: 'Pllugo', jt: 'J&T', imile: 'iMile', jt_real: 'J&T', anjun: 'Anjun' };
   const carrierName = carrierLabels[state.carrier] || 'Pllugo';
   const periodLabel = state.period === 'custom' ? 'Período escolhido' : state.period === 'yesterday' ? 'Ontem' : state.period === 1 ? 'Hoje' : `${state.period} dias`;
   $('#hero-label').innerHTML = `SLA ${slaBrand(carrierName)} · ${escapeHTML(periodLabel)}`;
@@ -5929,6 +5946,10 @@ function applyModeVisibility() {
   vis('#ranking-section', mode==='operacao'&&state.operationView==='motoristas');
 }
 function refresh() {
+  const waiting=state.carrier==='anjun'&&!filteredHistory().some(day=>day.anjun);
+  document.body.classList.toggle('anjun-awaiting',waiting);
+  const placeholder=document.getElementById('anjun-awaiting-panel');if(placeholder)placeholder.hidden=!waiting;
+  if(waiting){document.getElementById('window-info').textContent='—';document.getElementById('day-count').textContent='0';return;}
   if (unitBreakdownMissingForCurrentRange().length) ensureUnitBreakdownForCurrentRange();
   const filtered = filteredHistory();
   const agg = aggregate(filtered, state.carrier);
