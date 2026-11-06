@@ -1,11 +1,12 @@
 (() => {
 'use strict';
+const VERSION='20261106-access-reused';
 const API='https://pllugo-robo-production.up.railway.app/api/mobile-jms';
 let closeCurrent=()=>{};
-window.PllugoMobileLogin={close:()=>closeCurrent(),open};
+window.PllugoMobileLogin={version:VERSION,close:()=>closeCurrent(),open};
 function installStyle(){
- if(document.getElementById('pmj-style'))return;
- const style=document.createElement('style');style.id='pmj-style';style.textContent=`
+ const previous=document.getElementById('pmj-style');if(previous?.dataset.version===VERSION)return;previous?.remove();
+ const style=document.createElement('style');style.id='pmj-style';style.dataset.version=VERSION;style.textContent=`
  .pmj{position:fixed;inset:0;z-index:10000;box-sizing:border-box;background:#f6f7fa;color:#20232c;font:14px/1.45 system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);height:100dvh}
  .pmj *{box-sizing:border-box}.pmj button,.pmj input{font:inherit}.pmj button{border:1px solid #e3e5eb;background:white;color:#353a46;border-radius:12px;min-height:44px;padding:9px 14px;font-weight:650;cursor:pointer}.pmj button:disabled{opacity:.5;cursor:default}
  .pmj .pmj-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:white;border-bottom:1px solid #e8eaf0}.pmj .eyebrow{color:#ef4050;letter-spacing:.1em;font-size:10px;font-weight:800;text-transform:uppercase}.pmj h2{font-size:19px;line-height:1.25;margin:3px 0 0;letter-spacing:-.4px}.pmj .close{width:44px;padding:0;font-size:23px;border-radius:50%;background:#f6f7fa}
@@ -25,7 +26,7 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
  document.body.append(modal);const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';
  const img=modal.querySelector('.screen');
  const status=modal.querySelector('.pmj-status'),zoom=modal.querySelector('.zoom');
- const device=crypto.randomUUID();let id,closed=false,stopped=false,pointer=null,events=[],sending=false,pan=false,gesture=false,gesturePending=false;
+ const device=crypto.randomUUID();let id,closed=false,stopped=false,pointer=null,events=[],sending=false,pan=false,gesture=false,gesturePending=false,receivedFrame=false;
  let frameTimer,inputTimer,lastPoint,lastHeartbeat=0,rect=null,gestureRect=null,full=false,frameFailures=0,epoch=0,leaving=Promise.resolve(),holdSending=false,lastHold=0,lastHoldAck=0;
  const setStatus=(state,message)=>{modal.dataset.state=state;status.textContent=message;};
  const headers=async()=>{const result=await client.auth.getSession();if(!result.data?.session?.access_token)throw new Error('Entre novamente no dashboard.');return {Authorization:'Bearer '+result.data.session.access_token,'X-Control-ID':device,'Content-Type':'application/json'};};
@@ -38,10 +39,10 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
  function finish(){if(closed)return leaving;closed=true;epoch++;clearTimeout(frameTimer);clearInterval(inputTimer);events=[];leaving=leave();modal.remove();document.body.style.overflow=previousOverflow;window.removeEventListener('pagehide',finish);document.removeEventListener('visibilitychange',visibility);onClose();return leaving;}
  modal.querySelector('.back').onclick=finish;
  closeCurrent=finish;
- function completed(){const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',hour:'2-digit',hourCycle:'h23'}).format(new Date()));stop(hour<12?'Login pronto para os disparos automáticos. Os relatórios começam a atualizar a partir das 12h.':'Acesso liberado. Acompanhe o resultado da atualização no painel.',true,'Acesso validado');}
+ function completed(){const reused=receivedFrame?'':'O JMS confirmou o acesso automaticamente. Não foi necessário resolver CAPTCHA nesta verificação. ';const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',hour:'2-digit',hourCycle:'h23'}).format(new Date()));stop(reused+(hour<12?'Login pronto para os disparos automáticos. Os relatórios começam a atualizar a partir das 12h.':'Acesso liberado. Acompanhe o resultado da atualização no painel.'),true,'Acesso validado');}
  async function validationEnded(){let result=null;try{result=await getRunStatus()}catch{}if(closed)return;if(result==='completed'){completed();return}if(result==='error'||result==='needs_attention'){stop('A execução não concluiu. Volte ao painel para consultar o status e iniciar outra tentativa.');return}stop('A sessão de validação encerrou. Volte ao painel para acompanhar o resultado da execução.',true);}
 
- function stop(message,done=false,title='Validação encerrada'){stopped=true;epoch++;gesture=false;gesturePending=false;pointer=null;setStatus(done?'done':'error',message);if(done){modal.dataset.confirmed=String(title==='Acesso validado');modal.querySelector('.outcome-icon').textContent=title==='Acesso validado'?'✓':'i';modal.querySelector('.outcome h3').textContent=title;modal.querySelector('.outcome-message').textContent=message;}img.style.pointerEvents='none';clearTimeout(frameTimer);clearInterval(inputTimer);events=[];leaving=leave();}
+ function stop(message,done=false,title='Validação encerrada'){stopped=true;epoch++;gesture=false;gesturePending=false;pointer=null;setStatus(done?'done':'error',done?title:message);if(done){modal.dataset.confirmed=String(title==='Acesso validado');modal.querySelector('.outcome-icon').textContent=title==='Acesso validado'?'✓':'i';modal.querySelector('.outcome h3').textContent=title;modal.querySelector('.outcome-message').textContent=message;}img.style.pointerEvents='none';clearTimeout(frameTimer);clearInterval(inputTimer);events=[];leaving=leave();}
  async function flush(){
   if(sending||!events.length||closed||stopped||!id)return;sending=true;const batch=events.splice(0,24),current=epoch;
   try{await request('/'+id+'/input',{events:batch});if(current===epoch&&!gesture&&!events.some(e=>e.type==='down')&&batch.some(e=>e.type==='up'||e.type==='cancel'))gesturePending=false;}
@@ -88,7 +89,7 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
     const bitmap=await createImageBitmap(blob);
     if(closed||stopped||current!==epoch){bitmap.close();return;}
     rect=nextRect;if(img.width!==bitmap.width)img.width=bitmap.width;if(img.height!==bitmap.height)img.height=bitmap.height;
-    img.getContext('2d').drawImage(bitmap,0,0);bitmap.close();img.dataset.ready='true';
+    img.getContext('2d').drawImage(bitmap,0,0);bitmap.close();img.dataset.ready='true';receivedFrame=true;
    }
    frameFailures=0;setStatus('connected','Conectado · resolva o desafio na imagem');
   }catch(error){

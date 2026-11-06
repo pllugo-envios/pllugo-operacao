@@ -179,3 +179,11 @@ login foi validado e que os relatórios começam às 12h. O mesmo componente ate
 Mauá e Ribeirão. Fechar a confirmação atualiza o status e os dados do painel. Se a
 sessão desaparecer, o componente consulta o resultado antes de informar sucesso;
 erro confirmado continua oferecendo a recuperação, sem fingir acesso validado.
+
+Quando a validação termina antes de mostrar a sessão remota, a confirmação informa
+que o JMS liberou o acesso automaticamente e que não foi necessário resolver
+CAPTCHA nesta verificação. Isso não promete dispensa permanente: o JMS pode pedir
+nova validação em outro acesso. O host carrega o controle por URL fixa da própria
+origem com versão única a cada abertura; downloads concorrentes compartilham a
+requisição em andamento. Não envia sessão/credencial na URL nem reutiliza um
+componente antigo após falha de rede. O estilo também acompanha a versão do controle.

@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const compiled=(await build({entryPoints:['lib/mobile-viewer-loader.ts'],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022'})).outputFiles[0].text;
+async function fixture(run){const old={window:globalThis.window,document:globalThis.document};const scripts=[];let closes=0;globalThis.window={PllugoMobileLogin:{close:async()=>{closes++}}};globalThis.document={baseURI:'https://pllugo-envios.github.io/pllugo-operacao/',createElement:()=>({remove(){this.removed=true}}),head:{append:script=>scripts.push(script)}};try{const api=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64')+'#'+crypto.randomUUID());await run(api,scripts,()=>closes)}finally{globalThis.window=old.window;globalThis.document=old.document}}
+test('viewer loads a fresh same-origin asset on every opening without session data in URLs',()=>fixture(async(api,scripts,closes)=>{
+ const first=api.loadCurrentMobileViewer();await new Promise(setImmediate);assert.equal(closes(),1);let url=new URL(scripts[0].src);assert.equal(url.origin,'https://pllugo-envios.github.io');assert.equal(url.pathname,'/pllugo-operacao/modules/sla/assets/mobile-jms.js');assert.deepEqual([...url.searchParams.keys()],['v']);scripts[0].onload();await first;assert.equal(scripts[0].removed,true);
+ const next=api.loadCurrentMobileViewer();await new Promise(setImmediate);assert.equal(closes(),2);assert.notEqual(scripts[1].src,scripts[0].src);scripts[1].onload();await next;
+}));
+test('concurrent open requests share only the in-flight download',()=>fixture(async(api,scripts)=>{const first=api.loadCurrentMobileViewer(),second=api.loadCurrentMobileViewer();assert.equal(first,second);await new Promise(setImmediate);assert.equal(scripts.length,1);scripts[0].onload();await Promise.all([first,second])}));
+test('failed viewer download is reported and the next attempt downloads again',()=>fixture(async(api,scripts)=>{const first=api.loadCurrentMobileViewer(),rejected=assert.rejects(first,/carregar a validação/);await new Promise(setImmediate);scripts[0].onerror();await rejected;const retry=api.loadCurrentMobileViewer();await new Promise(setImmediate);assert.equal(scripts.length,2);scripts[1].onload();await retry}));
