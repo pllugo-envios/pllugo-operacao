@@ -21,6 +21,9 @@ test('sandbox bridge checks parent/origin/channel, queues queries and never rece
  await new Promise(setImmediate);assert.equal(sent.filter(x=>x.type==='pllugo-sla-request').length,4);
  const answered=new Set();while(answered.size<10){for(const request of sent.filter(x=>x.type==='pllugo-sla-request'&&!answered.has(x.id))){answered.add(request.id);listeners.message({source:parent,origin:'https://pllugo-envios.github.io',data:{type:'pllugo-sla-result',channel:'channel-1',id:request.id,result:{data:[],error:null}}})}await new Promise(setImmediate)}
  await Promise.all(jobs);assert.ok(!JSON.stringify(sent).includes('Bearer'));
+ let panelRefresh=0,dashboardRefresh=0;scope.refreshRobotPanel=()=>panelRefresh++;scope.refreshDashboardFromRobot=()=>dashboardRefresh++;
+ listeners.message({source:parent,origin:'https://unrelated.test',data:{type:'pllugo-sla-mobile-closed',channel:'channel-1'}});assert.equal(panelRefresh,0);
+ listeners.message({source:parent,origin:'https://pllugo-envios.github.io',data:{type:'pllugo-sla-mobile-closed',channel:'channel-1'}});assert.equal(panelRefresh,1);assert.equal(dashboardRefresh,1);
 });
 
 test('sandbox applies trusted unit options before releasing queries and blocks Driver navigation for managers',async()=>{

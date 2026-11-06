@@ -172,3 +172,10 @@ inferidos pelo servidor e, com `::jsonb` direto, serializa novamente o JSON já
 codificado, causando respostas vazias para acessos restritos. O teste
 `sla-wire.test.mjs` usa postgres.js 3.4.7, igual à produção, sobre o protocolo
 PostgreSQL do PGlite para reproduzir o erro antigo e validar o isolamento correto.
+
+Ao concluir a validação J&T no celular, o app troca o quadro de CAPTCHA por uma
+confirmação com **Voltar ao painel**. Antes de meio-dia, informa que somente o
+login foi validado e que os relatórios começam às 12h. O mesmo componente atende
+Mauá e Ribeirão. Fechar a confirmação atualiza o status e os dados do painel. Se a
+sessão desaparecer, o componente consulta o resultado antes de informar sucesso;
+erro confirmado continua oferecendo a recuperação, sem fingir acesso validado.

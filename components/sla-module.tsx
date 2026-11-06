@@ -28,7 +28,7 @@ export default function SlaModule({view,onExpired,onNavigate}:{view:string,onExp
       const flow=m.payload.mobileOpen.flow;
       if(!['jms-sla-motorista','jms-sla-motorista-rbp'].includes(flow))throw Error('Unidade inválida.');
       const started=Date.now(),device=crypto.randomUUID();
-      await (window as any).PllugoMobileLogin.open({flow,isAllowed:()=>!abort.signal.aborted,
+      await (window as any).PllugoMobileLogin.open({flow,isAllowed:()=>!abort.signal.aborted,onClose:()=>{if(!abort.signal.aborted)target.postMessage({type:'pllugo-sla-mobile-closed',channel:channel.current},'*')},
         transport:(path:string,body:any)=>mobileControlApi(path,body,abort.signal,device),getRunStatus:async()=>{
           const r=await api('/api/sla',{method:'POST',signal:abort.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({schema:'public',table:'robot_flow_status',op:'select',columns:'status,started_at,finished_at',filters:[{column:'id',op:'eq',value:flow}],orders:[],limit:1,offset:0,single:'required'})});
           if(!r.ok)return null;const value=await r.json();
