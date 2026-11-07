@@ -29,3 +29,11 @@ test('first day has no closed monthly rate and cutoff follows Brasília across m
  assert.equal(currentMonth(new Date('2028-03-01T03:00:00Z')).closedThrough,'2028-02-29');
  assert.equal(currentMonth(new Date('2026-11-07T02:59:00Z')).closedThrough,'2026-11-05');
 });
+
+test('all closed-month totals, units, sources and freshness exclude today while daily operation includes it',()=>{
+ const rows=[{date:'2026-11-06',source:'imile',by_unit:{maua:{total:100,entregues:90}},updated_at:'2026-11-07T02:00:00Z'},{date:'2026-11-07',source:'jt',by_unit:{maua:{total:10000,entregues:1},rbp:{total:500,entregues:400}},updated_at:'2026-11-07T15:00:00Z'}];
+ const closed=closedMonthSummary(rows,'2026-11-07');assert.equal(closed.volume,100);assert.equal(closed.delivered,90);assert.equal(closed.rate,90);
+ assert.deepEqual(closed.units.map(u=>[u.key,u.volume,u.delivered,u.rate]),[['maua',100,90,90]]);
+ assert.deepEqual(closed.sources,['iMile']);assert.equal(closed.provisional,false);assert.equal(closed.updatedAt,'2026-11-07T02:00:00Z');
+ const daily=dailySummary(rows,'2026-11-07');assert.equal(daily.volume,10500);assert.equal(daily.delivered,401);
+});
