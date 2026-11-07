@@ -6374,6 +6374,22 @@ $('#robot-panel-body')?.addEventListener('click',event=>{
 });
 
 
+function robotImportInfo(flow) {
+  const stamp = value => {
+    const date = new Date(value);
+    return value && Number.isFinite(+date) ? new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    }).format(date) : null;
+  };
+  const imported = stamp(flow.last_import_at);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(flow.last_report_date || '') ? flow.last_report_date.split('-').reverse().join('/') : null;
+  return {
+    imported: imported ? 'Última importação: ' + imported : 'Nenhuma importação confirmada',
+    report: date ? 'Dados de ' + date : '',
+    attempt: stamp(flow.started_at) ? 'Última tentativa: ' + stamp(flow.started_at) : '',
+  };
+}
+
 async function refreshRobotPanel() {
   if (!sb || !robotHasAccess || robotPanelBusy) return;
   const body = $('#robot-panel-body'), badge = $('#robot-badge');
@@ -6396,14 +6412,15 @@ async function refreshRobotPanel() {
     body.innerHTML = rows.map(f => {
       const dotColor = needsHuman(f) ? '#e5484d' : f.status === 'running' ? '#f5a623' : '#30a46c';
       const live = f.status === 'running' && !stale(f) ? robotLiveUrl(f.live_view_url) : null;
-      const label = f.message?.startsWith('Acesso validado;') && !robotDailyLoginDue(f) ? 'Acesso validado hoje' : stale(f) ? 'Execução antiga: verificar logs' : needsHuman(f) ? 'Verificar logs e iniciar nova execução' : f.finished_at ? robotTimeAgo(f.finished_at) : f.status === 'running' ? 'Em execução' : 'Nunca rodou';
+      const label = f.message?.startsWith('Acesso validado;') && !robotDailyLoginDue(f) ? 'Acesso validado hoje' : stale(f) ? 'Execução interrompida; aguardando retomada automática' : needsHuman(f) ? (f.error?.startsWith('Execução interrompida') ? 'Tentativa interrompida; retomada automática' : 'Falha na última tentativa') : f.finished_at ? robotTimeAgo(f.finished_at) : f.status === 'running' ? 'Em execução' : 'Nunca rodou';
       const canStart = robotJmsFlow(f.id) && (robotDailyLoginDue(f) || stale(f) || f.status === 'error');
       const rightSide = canStart
         ? `<button type="button" data-robot-login="${escapeHTML(f.id)}" ${robotLoginPending.has(f.id) ? 'disabled' : ''} style="border:0; background:none; font:inherit; font-size:12px; color:var(--pllugo-red); cursor:pointer; margin-left:8px;">${robotLoginPending.has(f.id) ? 'Preparando…' : f.status === 'error' ? 'Tentar atualização' : f.status === 'needs_attention' ? 'Resolver acesso' : 'Validar acesso de hoje'}</button>`
         : live
         ? `<a data-robot-mobile="${escapeHTML(f.id)}" href="${escapeHTML(live)}" target="_blank" rel="noopener noreferrer" style="font-size:12px; color:var(--pllugo-red); white-space:nowrap; margin-left:8px;">${waiting(f) ? 'Resolver login' : 'Acompanhar sessão'}</a>`
         : `<span style="font-size:11px; color:var(--gray-500); margin-left:8px;">${escapeHTML(label)}</span>`;
-      return `<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-top:1px solid var(--gray-100);"><div style="display:flex; align-items:center; gap:8px; min-width:0;"><span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; flex-shrink:0;"></span><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${slaBrandText(f.name)}</span></div>${rightSide}</div>`;
+      const info = robotImportInfo(f);
+      return `<div style="display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--gray-100);"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%"><div style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></span><span>${slaBrandText(f.name)}</span></div>${rightSide}</div><div class="robot-import-history" style="font-size:12px;line-height:1.6;color:var(--gray-500);padding-left:15px"><div style="color:var(--gray-700);font-weight:500">${escapeHTML(info.imported)}</div>${info.report ? `<div>${escapeHTML(info.report)}</div>` : ''}${info.attempt ? `<div>${escapeHTML(info.attempt)}</div>` : ''}</div></div>`;
     }).join('');
   } catch {
     if (epoch === robotAccessEpoch && robotHasAccess) {
