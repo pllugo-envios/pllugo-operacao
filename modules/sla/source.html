@@ -6300,7 +6300,8 @@ function robotImportInfo(flow) {
     }).format(date) : null;
   };
   const imported = stamp(flow.last_import_at);
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(flow.last_report_date || '') ? flow.last_report_date.split('-').reverse().join('/') : null;
+  const day = String(flow.last_report_date || '').slice(0, 10);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(day) ? day.split('-').reverse().join('/') : null;
   return {
     imported: imported ? 'Última importação: ' + imported : 'Nenhuma importação confirmada',
     report: date ? 'Dados de ' + date : '',
