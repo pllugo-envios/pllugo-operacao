@@ -82,8 +82,8 @@ renderDataQuality=function(...args){originalQualityDisplay(...args);for(const id
  .carrier-tag:has(.sla-clientbadge){padding:0;background:transparent!important;line-height:1;vertical-align:middle}.hero-label,#operation-scope{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
  .tower-sub,.app-drawer-sub,.drawer-row small{line-height:2.2}.entity-name:has(.sla-clientbadge){line-height:1}.control-status-copy .sla-clientbadge,#robot-panel-body .sla-clientbadge{width:58px;height:25px;padding:3px 5px;margin:0 2px}.control-status-copy .sla-clientmark,#robot-panel-body .sla-clientmark{width:46px;height:18px}.control-status-copy .sla-clientbadge img,#robot-panel-body .sla-clientbadge img{width:46px;height:18px}.control-status-copy .sla-clientbadge.imile img,#robot-panel-body .sla-clientbadge.imile img{height:auto}
  #robot-panel{position:fixed!important;inset:12px 12px auto!important;width:auto!important;max-width:600px!important;margin:0 auto!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important;box-sizing:border-box!important;z-index:2500!important;overscroll-behavior:contain}
- #robot-panel-body>div{align-items:flex-start!important;gap:12px;flex-wrap:wrap}
- #robot-panel-body>div>div{flex:1 1 180px}#robot-panel-body span{white-space:normal!important;overflow-wrap:anywhere}#robot-panel-body button,#robot-panel-body a{white-space:normal!important;max-width:100%}
+ #robot-panel-body>div{align-items:stretch!important;gap:6px;flex-wrap:nowrap}
+ #robot-panel-body>div>div{flex:0 0 auto;min-height:0}#robot-panel-body span{white-space:normal!important;overflow-wrap:anywhere}#robot-panel-body button,#robot-panel-body a{white-space:normal!important;max-width:100%}
  @media(max-width:600px){.topbar-inner{flex-wrap:wrap!important}.topbar-right{flex-wrap:wrap!important}.filters-inner{flex-wrap:wrap!important}.carrier-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.carrier-tabs .tab{min-width:0;padding:6px 2px}.carrier-tabs .sla-clientbadge{width:100%;max-width:66px;padding:4px}}
  </style></head>`);
  await mkdir('public/modules/sla',{recursive:true});await writeFile('public/modules/sla/index.html',html);
