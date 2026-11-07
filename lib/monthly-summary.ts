@@ -1,6 +1,7 @@
 export function currentMonth(now=new Date()){
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(now);
- return {today,start:today.slice(0,7)+'-01',key:today.slice(0,7),label:new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',month:'long',year:'numeric'}).format(now)};
+ const yesterday=new Date(today+'T12:00:00Z');yesterday.setUTCDate(yesterday.getUTCDate()-1);
+ return {today,closedThrough:yesterday.toISOString().slice(0,10),start:today.slice(0,7)+'-01',key:today.slice(0,7),label:new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',month:'long',year:'numeric'}).format(now)};
 }
 export function monthlySummary(rows:any[],month:string){
  const days=new Map<string,Record<string,any>>();
@@ -24,3 +25,5 @@ export function monthlySummary(rows:any[],month:string){
 }
 
 export function dailySummary(rows:any[],date:string){return monthlySummary(rows.filter(row=>row.date?.slice(0,10)===date),date.slice(0,7))}
+
+export function closedMonthSummary(rows:any[],today:string){return monthlySummary(rows.filter(row=>typeof row.date==='string'&&row.date.slice(0,10)<today),today.slice(0,7))}
