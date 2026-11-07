@@ -883,6 +883,7 @@
           <div id="robot-panel-body" style="display:flex; flex-direction:column;">
             <div style="padding:8px 0; color:var(--gray-500);">Carregando…</div>
           </div>
+          <div style="padding-top:12px;border-top:1px solid var(--gray-100)"><button type="button" id="robot-import-manual" hidden style="display:none;font:inherit;font-size:12px;padding:10px 14px;border:1px solid var(--gray-200);border-radius:10px;background:white;color:var(--pllugo-red);cursor:pointer">Importar relatório XLSX</button></div>
         </div>
       </div>
       <button class="btn-logout" id="btn-logout" title="Sair">Sair</button>
@@ -6173,6 +6174,8 @@ async function checkRobotAccess() {
     if (epoch !== robotAccessEpoch) return;
     if (error || data !== true) { resetRobotPanel(); return; }
     robotHasAccess = true;
+    const importButton = $('#robot-import-manual');
+    if (importButton) { const allowed = window.pllugoSlaScope?.isAdmin === true; importButton.hidden = !allowed; importButton.style.display = allowed ? 'inline-flex' : 'none'; }
     const menu = $('#robot-menu');
     if (menu) menu.style.display = '';
     await refreshRobotPanel();
@@ -6281,6 +6284,13 @@ $('#robot-panel-body')?.addEventListener('click',event=>{
   if(button){event.preventDefault();void requestRobotLogin(button.dataset.robotLogin);}
 });
 
+
+function robotManualImport() {
+  if (!robotHasAccess || window.pllugoSlaScope?.isAdmin !== true) return;
+  $('#upload-input')?.click();
+  const panel = $('#robot-panel'); if (panel) panel.style.display = 'none';
+}
+document.getElementById('robot-import-manual')?.addEventListener('click', robotManualImport);
 
 function robotImportInfo(flow) {
   const stamp = value => {

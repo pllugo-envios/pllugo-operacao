@@ -17,6 +17,14 @@ test('sem importação não transforma validação de login em atualização dos
  assert.equal(info.imported,'Nenhuma importação confirmada');assert.equal(info.report,'');
  assert.equal(scope.robotImportInfo({last_import_at:'invalid',last_report_date:'<script>'}).report,'');
 });
+test('importação manual abre o seletor só com perfil admin e acesso ao motor',()=>{
+ const start=source.indexOf('function robotManualImport()'),end=source.indexOf("document.getElementById('robot-import-manual')",start);
+ for(const isAdmin of [true,false])for(const robotHasAccess of [true,false]){
+  let clicks=0;const panel={style:{display:'block'}};
+  const scope={robotHasAccess,window:{pllugoSlaScope:{isAdmin}},$:selector=>selector==='#upload-input'?{click(){clicks++}}:panel};
+  vm.runInNewContext(source.slice(start,end),scope);scope.robotManualImport();assert.equal(clicks,Number(isAdmin&&robotHasAccess));
+ }
+});
 test('view mantém a importação anterior após erro, dry-run e validação de login',async()=>{
  const db=new PGlite();
  try{
