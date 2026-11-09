@@ -1,3 +1,4 @@
+import {executionFields} from './task-fields.ts';
 import {daySummary} from './day-summary.ts';
 import {CLIENTS} from './clients.ts';
 import {dailyReportQuestions} from './daily-report.ts';
@@ -8,7 +9,7 @@ function photoPriority(photo:any){const area=normalize(photo.area),caption=norma
 export function baseReport(records:any[],unit:string,date:string,client:string,today:string,time:string){
  const base=records.filter(t=>t.kind==='task'&&!t.deleted&&t.active!==false&&t.unit===unit&&t.date===date);
  const all=base.filter(t=>client==='Todos'||t.client===client),relevant=all.filter(t=>reportSection(t)),summary=daySummary(relevant,date,today,time);
- const tasks=relevant.map(t=>({...t,section:reportSection(t),late:summary.overdue.some(x=>x.id===t.id),details:Object.entries(t.answers||{}).filter(([key,value])=>(t.fields||[]).includes(key)&&String(value??'').trim()&&!/^(ids?|c[oó]digos?)/i.test(key)).map(([label,value])=>({label,value:String(value)}))}));
+ const tasks=relevant.map(t=>({...t,section:reportSection(t),late:summary.overdue.some(x=>x.id===t.id),details:Object.entries(t.answers||{}).filter(([key,value])=>executionFields(t).includes(key)&&String(value??'').trim()&&!/^(ids?|c[oó]digos?)/i.test(key)).map(([label,value])=>({label,value:String(value)}))}));
  for(const task of tasks){const received=task.details.find((d:any)=>/total.*recebid/.test(normalize(d.label))),dispatched=task.details.find((d:any)=>/total.*expedid/.test(normalize(d.label)));if(received&&dispatched&&Number.isFinite(Number(received.value))&&Number.isFinite(Number(dispatched.value)))task.details.push({label:'Diferença recebido − expedido',value:String(Number(received.value)-Number(dispatched.value))});}
  const hasPending=tasks.some(t=>t.details.some((d:any)=>/penden|backlog|retid|no piso|nao recebid|nao localiz|extravio|em tratativa|diferenca recebido/.test(normalize(d.label))&&Number(d.value)>0)||(t.orders||[]).some((o:any)=>['pending','awaiting','loss'].includes(o.status)));
  const groups=reportSections.map(([id,title])=>({id,title,tasks:tasks.filter(t=>t.section===id||(id==='dispatch'&&/recebid.*expedid/.test(normalize(t.title))))}));

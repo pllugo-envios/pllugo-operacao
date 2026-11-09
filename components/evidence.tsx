@@ -6,12 +6,12 @@ import {Camera,X,Check} from 'lucide-react';
 type Position={latitude:number;longitude:number;accuracy:number;timestamp:number};
 const addressCache=new Map<string,{value:string,at:number}>();
 const cell=(p:Position)=>`${p.latitude.toFixed(4)},${p.longitude.toFixed(4)}`;
-export function EvidenceCard({photo,index=0}:{photo:string,index?:number}){
+export function EvidenceCard({photo,index=0,onRemove,removingDisabled=false}:{photo:string,index?:number,onRemove?:()=>void,removingDisabled?:boolean}){
 const [url,setUrl]=useState(''),[error,setError]=useState('');
 useEffect(()=>{const controller=new AbortController();let objectUrl='',live=true;setUrl('');setError('');
 fetch('/api/photo?key='+encodeURIComponent(photo),{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Foto indisponível neste acesso.');return r.blob()}).then(blob=>{if(live){objectUrl=URL.createObjectURL(blob);setUrl(objectUrl)}}).catch(e=>{if(live&&e.name!=='AbortError')setError(e.message)});
 return()=>{live=false;controller.abort();if(objectUrl)URL.revokeObjectURL(objectUrl)}},[photo]);
-return <figure className="evidencecard photoonly">{url?<a href={url} target="_blank" rel="noreferrer"><img loading="lazy" alt={'Foto de evidência '+(index+1)} src={url}/><span>Foto {index+1} · ampliar</span></a>:<p role="status">{error||'Carregando foto…'}</p>}</figure>}
+return <figure className="evidencecard photoonly">{onRemove&&<button type="button" className="evidenceremove" aria-label={'Excluir foto '+(index+1)} disabled={removingDisabled} onClick={onRemove}><X size={18}/></button>}{url?<a href={url} target="_blank" rel="noreferrer"><img loading="lazy" alt={'Foto de evidência '+(index+1)} src={url}/><span>Foto {index+1} · ampliar</span></a>:<p role="status">{error||'Carregando foto…'}</p>}</figure>}
 export function CameraEvidence({taskId,instruction,onUploaded,onBusy,onError}:{taskId:string;instruction?:string;onUploaded:(key:string)=>void;onBusy:(b:boolean)=>void;onError:(s:string)=>void}){
 const [open,setOpen]=useState(false),[ready,setReady]=useState(false),[working,setWorking]=useState(false),[message,setMessage]=useState(''),[taken,setTaken]=useState(0),[retry,setRetry]=useState(false);
 const video=useRef<HTMLVideoElement>(null),stream=useRef<MediaStream|null>(null),mounted=useRef(true),position=useRef<Position|null>(null),positionPromise=useRef<Promise<Position>|null>(null),watch=useRef<number|null>(null),pending=useRef<{blob:Blob,meta:any}|null>(null),lookup=useRef<{key:string,promise:Promise<string|null>}|null>(null);
