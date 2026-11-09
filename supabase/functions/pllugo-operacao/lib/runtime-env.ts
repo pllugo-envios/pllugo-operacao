@@ -26,7 +26,7 @@ function storage() {
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
   const address = (name: string) => `${url.replace(/\/$/, '')}/storage/v1/object/${bucket}/${name.split('/').map(encodeURIComponent).join('/')}`;
   function valid(name: string) {
-    if (!/^(evidence\/[a-f0-9-]{36}|geocache\/-?[\d.]+,-?[\d.]+)$/.test(name))
+    if (!/^(evidence\/[a-f0-9-]{36}|geocache(?:-v2)?\/-?[\d.]+,-?[\d.]+)$/.test(name))
       throw new Error('Chave de arquivo inválida.');
   }
   async function metadata(name: string) {
