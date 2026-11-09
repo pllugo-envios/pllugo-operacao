@@ -2,6 +2,14 @@
 
 Rotinas operacionais, tarefas, cronograma diário e evidências das unidades Pllugo.
 
+Perguntas iniciadas por Quantidade ou Total precisam ter um campo em **Dados a
+registrar**. O editor identifica perguntas cadastradas somente como instrução,
+oferece **Criar campos de quantidade** e impede salvar a definição sem esses
+campos. A execução mantém a validação de inteiros não negativos, incluindo zero.
+Em 09/11/2026, as duas rotinas Pedidos Retidos e oito ocorrências abertas foram
+corrigidas com backup, preservando respostas, fotos, responsáveis e conclusões.
+O reparo idempotente está em `scripts/sql/task-quantity-fields-20261109.sql`.
+
 ## Atualização da versão 12
 
 Origem: Sites v12, commit 49098e2032951ba5a54f20ef3f51ee0f4f5f2cd5.
