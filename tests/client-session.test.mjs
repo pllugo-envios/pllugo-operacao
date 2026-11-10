@@ -37,9 +37,9 @@ test('default session is temporary; bearer is never placed in URLs',()=>fixture(
 }));
 test('remembering requires opt-in and authorization failures clear saved access',()=>fixture(async({api,local,session,reply})=>{
   api.setRememberSession(true);await api.api('/api/auth',{method:'POST'});
-  assert.equal(local.map.size,1);assert.equal(session.map.size,0);
+  assert.equal(local.map.has('pllugo-operacao-session-v1'),true);assert.equal(session.map.size,0);
   reply(new Response('{}',{status:401}));await api.api('/api/data');
-  assert.equal(local.map.size,0);assert.equal(session.map.size,0);
+  assert.equal(local.map.has('pllugo-operacao-session-v1'),false);assert.equal(session.map.size,0);
 }));
 test('blocked storage does not break login or in-memory access',()=>fixture(async({api,calls})=>{
   for(const name of ['sessionStorage','localStorage'])window[name]={getItem(){throw Error('blocked')},setItem(){throw Error('blocked')},removeItem(){throw Error('blocked')}};
@@ -65,4 +65,6 @@ test('every deployed API route passes client validation and keeps session transp
   for(const path of ['/api/dashboard/extra','/api/createevil','//untrusted.test/api/data'])await assert.rejects(api.api(path),/inválido/);
 }));
 
-test('indisponibilidade503 preserva o acesso salvo em vez de encerrar a sessão',()=>fixture(async({api,local,reply,calls})=>{api.setRememberSession(true);await api.api('/api/auth',{method:'POST'});reply(new Response('Servidor indisponível',{status:503}));await api.api('/api/auth');assert.equal(local.map.size,1);assert.equal(calls.at(-1).options.headers.get('authorization'),'Bearer '+'a'.repeat(64));}));
+test('indisponibilidade503 preserva o acesso salvo em vez de encerrar a sessão',()=>fixture(async({api,local,reply,calls})=>{api.setRememberSession(true);await api.api('/api/auth',{method:'POST'});reply(new Response('Servidor indisponível',{status:503}));await api.api('/api/auth');assert.equal(local.map.has('pllugo-operacao-session-v1'),true);assert.equal(calls.at(-1).options.headers.get('authorization'),'Bearer '+'a'.repeat(64));}));
+
+test('acesso lembrado dura30dias e reabre com a mesma sessão sem armazenar senha',()=>fixture(async({api,local,session,calls,reply})=>{api.setRememberSession(true);await api.api('/api/auth',{method:'POST'});const saved=JSON.parse(local.getItem('pllugo-operacao-session-v1'));assert.ok(saved.expires>Date.now()+29*86400000);assert.deepEqual(Object.keys(saved).sort(),['expires','token']);session.map.clear();const reopened=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64')+'#'+crypto.randomUUID());assert.equal(reopened.isRemembered(),true);reply(Response.json({user:{id:'test'}}));await reopened.api('/api/auth');assert.equal(calls.at(-1).options.headers.get('authorization'),'Bearer '+'a'.repeat(64));assert.equal(JSON.parse(local.getItem('pllugo-operacao-session-v1')).expires,saved.expires);}));
