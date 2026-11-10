@@ -4121,7 +4121,7 @@ function renderDataQuality(filtered) {
   const today=saoPauloToday(), todayInScope=state.period===1;
   const latest=(historyForUnit(state.unit).map(h=>h.date).sort().pop() || null);
   const hasToday=historyForUnit(state.unit).some(h=>h.date===today);
-  banner.className='control-status';
+  banner.hidden=false; banner.className='control-status';
   if (todayInScope && !hasToday) {
     banner.classList.add('crit'); title.textContent='Dados de hoje ainda não foram importados';
     txt.textContent=latest ? `Última data disponível: ${latest.split('-').reverse().join('/')}. A Torre não penaliza motoristas com fonte desatualizada.` : 'Nenhuma base disponível para o filtro selecionado.';
@@ -4133,9 +4133,7 @@ function renderDataQuality(filtered) {
   }
   const hasJtPreview = filtered.some(d => d.jt && !d.jt_real);
   if (state.mode === 'geral' && (state.carrier === 'pllugo' || state.carrier === 'jt_real') && hasJtPreview) {
-    banner.classList.add('warn'); title.textContent='SLA do dia em prévia operacional';
-    txt.textContent='J&T está usando o Monitoramento de bipagem enquanto o relatório Entrega/SLA não chegou. Quando o Entrega for importado, ele assume automaticamente a Visão Geral.';
-    pill.textContent='PRÉVIA'; return;
+    banner.hidden=true; return;
   }
   const sources=new Set(); for(const d of filtered){ if(d.jt_real||d.jt)sources.add('J&T'); if(d.imile)sources.add('iMile'); }
   if (state.carrier==='pllugo' && filtered.length && sources.size<2) { banner.classList.add('warn'); title.textContent='Visão Pllugo parcial'; txt.textContent=`Fontes encontradas: ${[...sources].join(' + ') || 'nenhuma'}. O SLA consolidado pode estar incompleto.`; pill.textContent='PARCIAL'; return; }

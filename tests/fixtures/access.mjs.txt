@@ -234,7 +234,7 @@ console.log('PASS: edição conjunta dos clientes, atribuição fixa comum, perm
 
 const geocode=await load('app/api/geocode/route.ts');assert.equal((await geocode.POST(req('/api/geocode',{latitude:200,longitude:0},ah))).status,400);assert.equal((await geocode.POST(req('/api/geocode',{latitude:-23.6,longitude:-46.4},{}))).status,401);
 const originalGeocodeFetch=globalThis.fetch;let externalGeocodeCalls=0;
-try{globalThis.fetch=async(url,options)=>{externalGeocodeCalls++;assert.ok(['photon.komoot.io','nominatim.openstreetmap.org'].includes(new URL(url).host));assert.match(options.headers['User-Agent'],/pllugo-envios/);return Response.json({features:[{properties:{type:'house',street:'Rua de teste',housenumber:'534-B',district:'Bairro de teste',city:'Mauá',state:'São Paulo'}}]});};
+try{globalThis.fetch=async(url,options)=>{externalGeocodeCalls++;assert.ok(['photon.komoot.io','nominatim.openstreetmap.org'].includes(new URL(url).host));assert.match(options.headers['User-Agent'],/pllugo-envios/);return Response.json({features:[{geometry:{coordinates:[-46.4,-23.6]},properties:{type:'house',street:'Rua de teste',housenumber:'534-B',district:'Bairro de teste',city:'Mauá',state:'São Paulo'}}]});};
 const located=await success(await geocode.POST(req('/api/geocode',{latitude:-23.6,longitude:-46.4},ah)));assert.deepEqual(located.lines,['534-B · Rua de teste','Bairro de teste','Mauá','São Paulo']);
 const cachedLocation=await success(await geocode.POST(req('/api/geocode',{latitude:-23.6,longitude:-46.4},ah)));assert.deepEqual(cachedLocation,located);assert.equal(externalGeocodeCalls,1);
 assert.equal((await geocode.POST(req('/api/geocode',{latitude:-23.61,longitude:-46.41},ah))).status,429);
