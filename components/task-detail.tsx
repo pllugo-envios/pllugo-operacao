@@ -1,4 +1,4 @@
-import {useEffect,useRef} from 'react';
+import {useEffect,useLayoutEffect,useRef} from 'react';
 import {ArrowLeft,ChevronLeft,ChevronRight,CheckCircle2,Clock,UserRound,CalendarDays,ClipboardList,Camera,Play,Pencil,RefreshCw} from 'lucide-react';
 import {ClientBadge} from './routine-form';
 import {EvidenceCard} from './evidence';
@@ -7,6 +7,8 @@ import {executionFields,isObservationField} from '../lib/task-fields';
 import {taskTitle} from '../lib/task-groups';
 import {orderStatus} from '../lib/order-status';
 export default function TaskDetail({task,tasks,index,scope,busy,error,canAct,late,onClose,onMove,onExecute,onRefresh}:{task:any;tasks:any[];index:number;scope:string;busy:boolean;error:string;canAct:boolean;late:boolean;onClose:()=>void;onMove:(index:number)=>void;onExecute:(task:any)=>void;onRefresh:()=>void}){
+ const previousTask=useRef({id:task?.id,index});
+ useLayoutEffect(()=>{const previous=previousTask.current;previousTask.current={id:task?.id,index};if(!previous.id||!task?.id||previous.id===task.id||previous.index===index||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;const content=scroll.current?.querySelector<HTMLElement>('.taskdetailcontent');if(!content?.animate)return;const direction=index>previous.index?1:-1;const animation=content.animate([{opacity:.35,transform:`translateX(${direction*22}px)`},{opacity:1,transform:'translateX(0)'}],{duration:240,easing:'cubic-bezier(.22,.68,0,1)'});return()=>animation.cancel();},[task?.id,index]);
  const gesture=useRef<{x:number;y:number}|null>(null);
  const heading=useRef<HTMLHeadingElement>(null),scroll=useRef<HTMLDivElement>(null),latest=useRef({index,tasks,onMove,onClose,busy});latest.current={index,tasks,onMove,onClose,busy};
  useEffect(()=>{const overflow=document.body.style.overflow,previous=document.activeElement as HTMLElement|null;document.body.style.overflow='hidden';function key(e:KeyboardEvent){if(document.querySelector('.photoviewer,.cameraoverlay,.taskcompleted')||(e.target as HTMLElement).closest('input,textarea,select'))return;const s=latest.current;if(e.key==='Tab'){const controls=Array.from(heading.current?.closest('.taskdetail')?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],summary')||[]).filter(element=>element.getClientRects().length>0),first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}if(s.busy)return;if(e.key==='Escape'){e.preventDefault();s.onClose();}if(e.key==='ArrowRight'&&s.index<s.tasks.length-1){e.preventDefault();s.onMove(s.index+1);}if(e.key==='ArrowLeft'&&s.index>0){e.preventDefault();s.onMove(s.index-1);}}document.addEventListener('keydown',key);return()=>{document.body.style.overflow=overflow;document.removeEventListener('keydown',key);previous?.focus();};},[]);
