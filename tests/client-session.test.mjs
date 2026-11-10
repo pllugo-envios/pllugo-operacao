@@ -64,3 +64,5 @@ test('every deployed API route passes client validation and keeps session transp
   }
   for(const path of ['/api/dashboard/extra','/api/createevil','//untrusted.test/api/data'])await assert.rejects(api.api(path),/inválido/);
 }));
+
+test('indisponibilidade503 preserva o acesso salvo em vez de encerrar a sessão',()=>fixture(async({api,local,reply,calls})=>{api.setRememberSession(true);await api.api('/api/auth',{method:'POST'});reply(new Response('Servidor indisponível',{status:503}));await api.api('/api/auth');assert.equal(local.map.size,1);assert.equal(calls.at(-1).options.headers.get('authorization'),'Bearer '+'a'.repeat(64));}));

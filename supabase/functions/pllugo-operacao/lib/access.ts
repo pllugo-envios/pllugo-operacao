@@ -1,3 +1,4 @@
+import {temporaryDatabaseError,unavailableMessage} from './service-errors.ts';
 import {env} from './runtime-env.ts';
 export const UNITS=['Mauá • Unidade 1','Mauá • Unidade 2','Ribeirão Pires'];
 export type User={id:string,email:string,name:string,role:string,accessLevel?:string,units:string[],mustChange:boolean,owner?:boolean,active?:boolean};
@@ -5,7 +6,7 @@ export class HttpError extends Error{constructor(public status:number,message:st
 export const db=()=>env.DB!;
 export const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
 export function json(value:any,status=200){return Response.json(value,{status,headers:{'Cache-Control':'private, no-store'}})}
-export function failure(e:any){return new Response(e instanceof HttpError?e.message:'Não foi possível concluir a operação.',{status:e instanceof HttpError?e.status:500,headers:{'Cache-Control':'no-store'}})}
+export function failure(e:any){const temporary=temporaryDatabaseError(e);if(!(e instanceof HttpError))console.error('operation-failed',String(e?.code||'UNCLASSIFIED').replace(/[^A-Z0-9_]/g,'').slice(0,32));return new Response(e instanceof HttpError?e.message:temporary?unavailableMessage:'Não foi possível concluir a operação.',{status:e instanceof HttpError?e.status:temporary?503:500,headers:{'Cache-Control':'no-store',...(temporary?{'Retry-After':'3'}:{})}})}
 export function sameOrigin(req:Request){const o=req.headers.get('origin');if(o&&o!==new URL(req.url).origin)throw new HttpError(403,'Origem não autorizada.');}
 export function manager(u:User){return ['Administrador','Supervisor','Líder de base'].includes(u.role)}
 export function canUnit(u:User,unit:string){return u.role==='Administrador'||u.units.includes(unit)}

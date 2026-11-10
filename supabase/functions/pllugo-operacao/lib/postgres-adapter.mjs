@@ -1,3 +1,4 @@
+import {temporaryDatabaseError} from './service-errors.ts';
 // Compatibility for the app's existing parameterized D1 statements.
 // Only server-authored statements reach this adapter. Values remain parameters.
 export function translate(sql, values = []) {
@@ -28,7 +29,7 @@ export function translate(sql, values = []) {
 export function createDatabase(sql) {
   function prepared(query, values = []) {
     const statement = translate(query, values);
-    const execute = client => client.unsafe(statement.text, statement.values);
+    const execute = async client => {try{return await client.unsafe(statement.text,statement.values)}catch(error){if(!/^SELECT\b/i.test(statement.text)||!temporaryDatabaseError(error))throw error;await new Promise(resolve=>setTimeout(resolve,200));return client.unsafe(statement.text,statement.values)}};
     return {
       bind(...args) { return prepared(query, args); },
       async first() { const rows = await execute(sql); return rows[0] ?? null; },

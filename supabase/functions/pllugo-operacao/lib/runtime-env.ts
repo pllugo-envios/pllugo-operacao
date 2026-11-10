@@ -14,7 +14,7 @@ function sql() {
     const url = Deno.env.get('SUPABASE_DB_URL');
     if (!url) throw new Error('Configure DATABASE_URL somente no servidor.');
     connection = postgres(url, { max: 1, prepare: false,
-      ssl: { rejectUnauthorized: true }, idle_timeout: 20, connect_timeout: 10 });
+      ssl: { rejectUnauthorized: true }, idle_timeout: 20, connect_timeout: 5 });
   }
   return connection;
 }
