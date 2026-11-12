@@ -33,7 +33,8 @@ test('storage round-trips structured evidence metadata and rejects malformed row
     await env.BUCKET.put(cacheKey,JSON.stringify({address:'Endereço de teste'}));
     assert.ok(await env.BUCKET.get(cacheKey));
     assert.ok(await env.BUCKET.get('geocache/-23.6670,-46.4600'));
-    for(const invalid of ['geocache-v3/-23,-46','geocache-v2/../../secret','geocache-v2/-23,-46/extra','other/-23,-46'])await assert.rejects(env.BUCKET.get(invalid),/Chave de arquivo inválida/);
+    for(const cacheVersion of ['geocache-v3','geocache-v5-geoapify']){const key=cacheVersion+'/-23.66700,-46.46000';await env.BUCKET.put(key,JSON.stringify({address:'Endereço de teste'}));assert.ok(await env.BUCKET.get(key));}
+    for(const invalid of ['geocache-v99/-23,-46','geocache-v5-geoapify/../../secret','geocache-v2/../../secret','geocache-v2/-23,-46/extra','other/-23,-46'])await assert.rejects(env.BUCKET.get(invalid),/Chave de arquivo inválida/);
     row.custom_metadata=JSON.stringify(metadata);
     await assert.rejects(env.BUCKET.get(key),/Metadados/);
   }finally{
