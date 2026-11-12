@@ -1,6 +1,8 @@
+import {requestGeoapify} from './geocode-geoapify.ts';
 import {formatGeocode} from './geocode-format.ts';
 function distance(latitude:number,longitude:number,coordinates:any){if(!Array.isArray(coordinates)||!coordinates.slice(0,2).every(Number.isFinite))return Infinity;const r=Math.PI/180;return Math.hypot((coordinates[0]-longitude)*r*Math.cos(latitude*r),(coordinates[1]-latitude)*r)*6371000;}
-export async function providerAddress(latitude:number,longitude:number,request:typeof fetch=fetch){
+export async function providerAddress(latitude:number,longitude:number,request:typeof fetch=fetch,config:{geoapifyKey?:string}={}){
+ if(config.geoapifyKey)return requestGeoapify(latitude,longitude,config.geoapifyKey,request);
  const photon=new URL('https://photon.komoot.io/reverse');photon.search=new URLSearchParams({lat:String(latitude),lon:String(longitude),limit:'5',radius:'0.2'}).toString();photon.searchParams.append('layer','house');photon.searchParams.append('layer','street');
  const nominatim=new URL('https://nominatim.openstreetmap.org/reverse');nominatim.search=new URLSearchParams({format:'jsonv2',lat:String(latitude),lon:String(longitude),zoom:'18',layer:'address',addressdetails:'1','accept-language':'pt-BR'}).toString();
  let fallback:any=null;

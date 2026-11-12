@@ -69,6 +69,7 @@ function storage() {
   };
 }
 export const env = {
+  get GEOAPIFY_API_KEY(){return Deno.env.get('GEOAPIFY_API_KEY');},
   async slaIdentity(user:{id:string,email:string,owner?:boolean}){
     // Only the owner's existing, Supabase-verified login delegates an Auth identity.
     // Internal managed accounts get a separate namespace, never an email-based
