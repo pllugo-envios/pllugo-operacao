@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const VERSION='20261106-start-11';
+const VERSION='20261112-validation-import';
 const API='https://pllugo-robo-production.up.railway.app/api/mobile-jms';
 let closeCurrent=()=>{};
 window.PllugoMobileLogin={version:VERSION,close:()=>closeCurrent(),open};
@@ -39,7 +39,7 @@ async function open({client,flow,isAllowed=()=>true,onClose=()=>{},getRunStatus=
  function finish(){if(closed)return leaving;closed=true;epoch++;clearTimeout(frameTimer);clearInterval(inputTimer);events=[];leaving=leave();modal.remove();document.body.style.overflow=previousOverflow;window.removeEventListener('pagehide',finish);document.removeEventListener('visibilitychange',visibility);onClose();return leaving;}
  modal.querySelector('.back').onclick=finish;
  closeCurrent=finish;
- function completed(){const reused=receivedFrame?'':'O JMS confirmou o acesso automaticamente. Não foi necessário resolver CAPTCHA nesta verificação. ';const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',hour:'2-digit',hourCycle:'h23'}).format(new Date()));stop(reused+(hour<11?'Login pronto para os disparos automáticos. Os relatórios começam a atualizar a partir das 11h.':'Acesso liberado. Acompanhe o resultado da atualização no painel.'),true,'Acesso validado');}
+ function completed(){const reused=receivedFrame?'':'O JMS confirmou o acesso automaticamente. Não foi necessário resolver CAPTCHA nesta verificação. ';stop(reused+'A solicitação foi concluída. Confira o horário da última importação no Motor de dados. A programação automática permanece ativa.',true,'Acesso validado');}
  async function validationEnded(){let result=null;try{result=await getRunStatus()}catch{}if(closed)return;if(result==='completed'){completed();return}if(result==='error'||result==='needs_attention'){stop('A execução não concluiu. Volte ao painel para consultar o status e iniciar outra tentativa.');return}stop('A sessão de validação encerrou. Volte ao painel para acompanhar o resultado da execução.',true);}
 
  function stop(message,done=false,title='Validação encerrada'){stopped=true;epoch++;gesture=false;gesturePending=false;pointer=null;setStatus(done?'done':'error',done?title:message);if(done){modal.dataset.confirmed=String(title==='Acesso validado');modal.querySelector('.outcome-icon').textContent=title==='Acesso validado'?'✓':'i';modal.querySelector('.outcome h3').textContent=title;modal.querySelector('.outcome-message').textContent=message;}img.style.pointerEvents='none';clearTimeout(frameTimer);clearInterval(inputTimer);events=[];leaving=leave();}
