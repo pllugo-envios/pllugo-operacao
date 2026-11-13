@@ -6427,9 +6427,9 @@ async function refreshRobotPanel() {
       const canStart = robotStartableFlow(f.id) && (robotDailyLoginDue(f) || stale(f) || f.status === 'error' || f.status === 'needs_attention');
       const rightSide = canStart
         ? `<button type="button" data-robot-login="${escapeHTML(f.id)}" ${robotLoginPending.has(f.id) ? 'disabled' : ''} style="border:0; background:none; font:inherit; font-size:12px; color:var(--pllugo-red); cursor:pointer; margin-left:8px;">${robotLoginPending.has(f.id) ? 'Preparando…' : f.status === 'error' ? 'Tentar atualização' : f.status === 'needs_attention' ? 'Resolver acesso' : 'Validar acesso de hoje'}</button>`
-        : live
+        : live && waiting(f)
         ? `<a data-robot-mobile="${escapeHTML(f.id)}" href="${escapeHTML(live)}" target="_blank" rel="noopener noreferrer" style="font-size:12px; color:var(--pllugo-red); white-space:nowrap; margin-left:8px;">${waiting(f) ? 'Resolver login' : 'Acompanhar sessão'}</a>`
-        : `<span style="font-size:11px; color:var(--gray-500); margin-left:8px;">${escapeHTML(label)}</span>`;
+        : `<span style="font-size:11px; color:var(--gray-500); margin-left:8px;">${escapeHTML(f.status === 'running' && !stale(f) && !waiting(f) ? 'Atualizando automaticamente' : label)}</span>`;
       const info = robotImportInfo(f);
       return `<div style="display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--gray-100);"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%"><div style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></span><span>${slaBrandText(f.name)}</span></div>${rightSide}</div><div class="robot-import-history" style="font-size:12px;line-height:1.6;color:var(--gray-500);padding-left:15px"><div style="color:var(--gray-700);font-weight:500">${escapeHTML(info.imported)}</div>${info.report ? `<div>${escapeHTML(info.report)}</div>` : ''}${info.attempt ? `<div>${escapeHTML(info.attempt)}</div>` : ''}</div></div>`;
     }).join('');
@@ -6818,4 +6818,5 @@ const originalQualityDisplay=renderDataQuality;
 renderDataQuality=function(...args){originalQualityDisplay(...args);for(const id of ['data-quality-title','data-quality-text']){const el=document.getElementById(id);if(el)el.innerHTML=slaBrandText(el.textContent)}};
 </script></body>
 </html>
+
 
