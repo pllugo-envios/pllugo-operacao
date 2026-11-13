@@ -1,10 +1,9 @@
-// Registers the Anjun channel in the existing SLA engine. Report parsing and
-// portal credentials deliberately remain unconfigured until supplied.
+// Canal Anjun; os relatórios passam pela validação transacional do robô.
 export function includeAnjun(html){
  const change=(from,to)=>{if(!html.includes(from))throw Error('Anjun integration anchor changed: '+from.slice(0,90));html=html.replaceAll(from,to)};
  change('<button class="tab" data-carrier="imile">iMile</button>','<button class="tab" data-carrier="imile">iMile</button>\n      <button class="tab" data-carrier="anjun">Anjun</button>');
  change('J&T e iMile ponderados pelo volume','J&T, iMile e Anjun ponderados pelo volume');
- change('function classifyAndProcess(filename, rows) {',"function classifyAndProcess(filename, rows) {\n  if(/anjun/i.test(String(filename)))throw Error('O importador Anjun será configurado após a definição do portal e do formato dos relatórios.');");
+ change('function classifyAndProcess(filename, rows) {',"function classifyAndProcess(filename, rows) {\n  if(/anjun/i.test(String(filename)) || (rows[0] && 'Número do Waybill' in rows[0] && 'Ponto Responsável' in rows[0]))throw Error('Use o fluxo automático Anjun — Ribeirão Pires no Motor de dados. Ele valida ponto, data e remessas antes da importação.');");
  change('function mergePllugo(jt, imile) {','function mergePllugo(jt, imile, anjun) {');
  change('for (const src of [jt, imile])','for (const src of [jt, imile, anjun])');
  change('mergePllugo(day.jt_real || day.jt, day.imile)','mergePllugo(day.jt_real || day.jt, day.imile, day.anjun)');

@@ -2593,7 +2593,7 @@ function processImile(rows) {
 // Retorna lista de {source, date, data} pra um arquivo.
 // ──────────────────────────────────────────────
 function classifyAndProcess(filename, rows) {
-  if(/anjun/i.test(String(filename)))throw Error('O importador Anjun será configurado após a definição do portal e do formato dos relatórios.');
+  if(/anjun/i.test(String(filename)) || (rows[0] && 'Número do Waybill' in rows[0] && 'Ponto Responsável' in rows[0]))throw Error('Use o fluxo automático Anjun — Ribeirão Pires no Motor de dados. Ele valida ponto, data e remessas antes da importação.');
   const name = lc(filename);
   const results = [];
   const knowledgeKind = detectOrderKnowledgeReport(filename, rows);
@@ -3681,6 +3681,7 @@ function driversForCarrier(carrier, filtered, opts = {}) {
     if ((carrier === 'pllugo' || carrier === 'anjun') && day.anjun) sources.push({ list: day.anjun.drivers || [], carrier: 'Anjun' });
     for (const s of sources) {
       for (const d of s.list) {
+        if (d.unassigned || d.name === 'Sem entregador atribuído') continue;
         const k = carrier === 'pllugo' ? normalizeDriverName(d.name) : `${s.carrier}|${d.name}`;
         if (!map[k]) {
           map[k] = {
@@ -4324,7 +4325,7 @@ async function refreshTowerSnapshotsCache(date = towerReferenceDate()){
 function towerDriverRowsForDay(day) {
   const map = new Map();
   const addDriver = (d, carrier, unit) => {
-    if (!d || !d.name) return;
+    if (!d || !d.name || d.unassigned || d.name === 'Sem entregador atribuído') return;
     const name = displayDriverName(d.name);
     const key = `${carrier || 'Pllugo'}|${normalizeDriverName(name)}`;
     if (!map.has(key)) map.set(key, { name, carrier: carrier || 'Pllugo', total: 0, delivered: 0, pendentes: 0, sla: 0, unit: unit || null, orders: [] });
@@ -6294,6 +6295,7 @@ function robotTimeAgo(iso) {
   return `há ${Math.round(diffMin / 60)}h`;
 }
 
+function robotStartableFlow(id){return ['jms-sla-motorista','jms-sla-motorista-rbp','anjun-entrada-rbp'].includes(id);}
 function robotJmsFlow(id) { return ['jms-sla-motorista','jms-sla-motorista-rbp'].includes(id); }
 function robotBrasiliaDay(value) {
   const date=new Date(value);
@@ -6326,11 +6328,11 @@ async function openRobotMobile(flowId,startNew=false) {
   finally{robotLoginPending.delete(flowId);void refreshRobotPanel();}
 }
 async function requestRobotLogin(flowId) {
-  if(robotMobileAvailable())return openRobotMobile(flowId,true);
-  if(!robotHasAccess || !robotJmsFlow(flowId) || robotLoginPending.has(flowId))return;
+  if(robotMobileAvailable() && robotJmsFlow(flowId))return openRobotMobile(flowId,true);
+  if(!robotHasAccess || !robotStartableFlow(flowId) || robotLoginPending.has(flowId))return;
   const epoch=robotLoginEpoch;
   const popup=window.open('about:blank','_blank');
-  if(popup){popup.opener=null;popup.document.title='Validação J&T';popup.document.body.textContent='Preparando a sessão da sua unidade. Aguarde; esta aba abrirá a validação automaticamente.';robotLoginWindows.add(popup);}
+  if(popup){popup.opener=null;popup.document.title=flowId==='anjun-entrada-rbp'?'Validação Anjun':'Validação J&T';popup.document.body.textContent='Preparando a sessão da sua unidade. Aguarde; esta aba abrirá a validação automaticamente.';robotLoginWindows.add(popup);}
   robotLoginPending.add(flowId);void refreshRobotPanel();
   try {
     const {data,error}=await sb.rpc('robot_request_jms_login',{target_flow_id:flowId});
@@ -6369,7 +6371,7 @@ async function requestRobotLogin(flowId) {
 }
 $('#robot-panel-body')?.addEventListener('click',event=>{
   const mobile=event.target.closest('[data-robot-mobile]');
-  if(mobile && robotMobileAvailable()){event.preventDefault();void openRobotMobile(mobile.dataset.robotMobile);return;}
+  if(mobile && robotJmsFlow(mobile.dataset.robotMobile) && robotMobileAvailable()){event.preventDefault();void openRobotMobile(mobile.dataset.robotMobile);return;}
   const button=event.target.closest('[data-robot-login]');
   if(button){event.preventDefault();void requestRobotLogin(button.dataset.robotLogin);}
 });
@@ -6422,7 +6424,7 @@ async function refreshRobotPanel() {
       const dotColor = needsHuman(f) ? '#e5484d' : f.status === 'running' ? '#f5a623' : '#30a46c';
       const live = f.status === 'running' && !stale(f) ? robotLiveUrl(f.live_view_url) : null;
       const label = f.message?.startsWith('Acesso validado;') && !robotDailyLoginDue(f) ? 'Acesso validado hoje' : stale(f) ? 'Execução interrompida; aguardando retomada automática' : needsHuman(f) ? (f.error?.startsWith('Execução interrompida') ? 'Tentativa interrompida; retomada automática' : 'Falha na última tentativa') : f.finished_at ? robotTimeAgo(f.finished_at) : f.status === 'running' ? 'Em execução' : 'Nunca rodou';
-      const canStart = robotJmsFlow(f.id) && (robotDailyLoginDue(f) || stale(f) || f.status === 'error');
+      const canStart = robotStartableFlow(f.id) && (robotDailyLoginDue(f) || stale(f) || f.status === 'error' || f.status === 'needs_attention');
       const rightSide = canStart
         ? `<button type="button" data-robot-login="${escapeHTML(f.id)}" ${robotLoginPending.has(f.id) ? 'disabled' : ''} style="border:0; background:none; font:inherit; font-size:12px; color:var(--pllugo-red); cursor:pointer; margin-left:8px;">${robotLoginPending.has(f.id) ? 'Preparando…' : f.status === 'error' ? 'Tentar atualização' : f.status === 'needs_attention' ? 'Resolver acesso' : 'Validar acesso de hoje'}</button>`
         : live
