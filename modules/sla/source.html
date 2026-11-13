@@ -3597,7 +3597,7 @@ function driversForCarrier(carrier, filtered, opts = {}) {
   const map = {};
   for (const day of filtered) {
     const sources = [];
-    const jtForDrivers = opts.operationalJt ? day.jt : day.jt_real;
+    const jtForDrivers = opts.operationalJt ? day.jt : (day.jt_real || day.jt);
     if (carrier === 'pllugo' && jtForDrivers) sources.push({ list: jtForDrivers.drivers, carrier: 'J&T' });
     if ((carrier === 'jt' || carrier === 'jt_real') && jtForDrivers) sources.push({ list: jtForDrivers.drivers, carrier: 'J&T' });
     if ((carrier === 'pllugo' || carrier === 'imile') && day.imile) sources.push({ list: day.imile.drivers, carrier: 'iMile' });

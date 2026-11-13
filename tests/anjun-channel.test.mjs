@@ -13,6 +13,18 @@ const names=['mergePllugo','sourceForDay','operationalSourceForDay','aggregate',
 const scope={round1:n=>Math.round(n*10)/10,normalizeDriverName:s=>s.toLowerCase(),displayDriverName:s=>s,extractOccurrenceMap:()=>({}),state:{carrier:'anjun',unit:'all'},DASH_DATA:{history:[]}};
 vm.createContext(scope);vm.runInContext(tree.statements.filter(n=>ts.isFunctionDeclaration(n)&&names.includes(n.name?.text)).map(n=>n.getText(tree)).join('\n'),scope);
 const source=(total,delivered)=>({total,entregues:delivered,pendentes:total-delivered,problematicos:0,sla:100*delivered/total,drivers:[{name:'Mesmo nome',total,delivered,pendentes:total-delivered,problems:0}]});
+test('J&T counts available operational drivers until closed SLA arrives, without adding both sources',()=>{
+ const jt=source(100,40),closed=source(90,85),today={date:'2026-11-13',jt};
+ assert.equal(scope.driversForCarrier('jt_real',[today]).length,1);
+ assert.equal(scope.driversForCarrier('pllugo',[today])[0].total,100);
+ const complete={...today,jt_real:closed};
+ assert.equal(scope.driversForCarrier('jt_real',[complete])[0].total,90);
+ assert.equal(scope.driversForCarrier('jt_real',[complete],{operationalJt:true})[0].total,100);
+ const other={date:'2026-11-12',jt:source(20,10)};
+ assert.equal(scope.driversForCarrier('jt_real',[today,other]).length,1);
+ assert.equal(scope.driversForCarrier('jt_real',[today,other])[0].total,120);
+ assert.equal(scope.driversForCarrier('jt_real',[]).length,0);
+});
 test('Anjun is isolated in SLA/operation/driver filters and included once in Pllugo totals',()=>{
  const jt=source(100,80),imile=source(50,40),anjun=source(25,20),day={date:'2026-11-06',jt,jt_real:jt,imile,anjun};day.pllugo=scope.mergePllugo(jt,imile,anjun);
  assert.equal(day.pllugo.total,175);assert.equal(day.pllugo.entregues,140);assert.equal(scope.sourceForDay(day,'anjun'),anjun);assert.equal(scope.operationalSourceForDay(day,'anjun'),anjun);
