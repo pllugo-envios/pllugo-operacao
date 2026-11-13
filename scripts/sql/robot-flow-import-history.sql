@@ -12,10 +12,10 @@ left join lateral (
 ) imported on true
 left join lateral (
  select b.report_date from public.import_batches b where b.status='success'
- and b.imported_at<=imported.finished_at
+ and (b.filename=regexp_replace(imported.output_path,'^.*/','') or b.imported_at<=imported.finished_at)
  and b.filename like case f.id
  when 'imile-ofd-maua' then 'ofd-imile-maua-%'
- when 'imile-ofd-rbp' then 'ofd-imile-rbp-%'
+ when 'imile-ofd-rbp' then 'ofd-imile-rbp-%' when 'imile-ofd-maua2' then 'ofd-imile-maua2-%'
  when 'jms-sla-motorista' then 'sla-motorista-maua-%'
  when 'jms-sla-motorista-rbp' then 'sla-motorista-rbp-%'
  else null end

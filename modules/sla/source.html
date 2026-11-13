@@ -3289,6 +3289,7 @@ function saoPauloNow() {
 function normalizeSearchText(v){ return String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase(); }
 function inferUnitFromRow(row) {
   const station = normalizeSearchText(row && row.Station).replace(/[^A-Z0-9]+/g, ' ').trim();
+  if (station === 'DS PMU' || station === 'PMU') return 'maua2';
   if (station === 'DS MAU' || /\bDS\s*MAU\b/.test(station)) return 'maua';
   if (station === 'DS RBI' || /\bDS\s*RBI\b/.test(station)) return 'rbp';
   const values = Object.values(row || {}).filter(v => v != null && String(v).trim() !== '').map(normalizeSearchText);
@@ -3311,17 +3312,16 @@ function inferUnitFromRow(row) {
 // dispositivo vê exatamente o mesmo recorte por unidade.
 // ──────────────────────────────────────────────
 function computeUnitBreakdown(filename, rows) {
-  const groups = { maua: [], rbp: [] };
+  const groups = { maua: [], maua2: [], rbp: [] };
   for (const row of rows || []) { const u = inferUnitFromRow(row); if (u) groups[u].push(row); }
 
   // Relatórios separados por unidade às vezes trazem poucas linhas residuais da
   // outra base. Se uma unidade domina o arquivo, atualiza só ela; isso impede
   // que uma importação de RBP sobrescreva a base Mauá inteira por causa de ruído.
-  const totalUnitRows = groups.maua.length + groups.rbp.length;
+  const totalUnitRows = Object.values(groups).reduce((total, rows) => total + rows.length, 0);
   if (totalUnitRows > 0) {
-    const dominant = groups.maua.length >= groups.rbp.length ? 'maua' : 'rbp';
-    const other = dominant === 'maua' ? 'rbp' : 'maua';
-    if (groups[dominant].length / totalUnitRows >= 0.95) groups[other] = [];
+    const dominant = Object.keys(groups).sort((a,b) => groups[b].length-groups[a].length)[0];
+    if (groups[dominant].length / totalUnitRows >= 0.95) for (const other of Object.keys(groups)) if (other !== dominant) groups[other] = [];
   }
 
   const byKey = {}; // `${date}|${source}` -> { maua: data, rbp: data }

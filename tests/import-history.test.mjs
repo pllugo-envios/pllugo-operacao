@@ -42,5 +42,7 @@ test('view mantém a importação anterior após erro, dry-run e validação de 
   const ddl=await readFile('scripts/sql/robot-flow-import-history.sql','utf8');await db.exec(ddl);await db.exec(ddl);
   const row=(await db.query('select * from robot_flow_status')).rows[0];assert.equal(row.run_id,'login');
   assert.equal(new Date(row.last_import_at).toISOString(),'2026-11-07T02:41:00.000Z');assert.equal(new Date(row.last_report_date).toISOString().slice(0,10),'2026-11-06');
+  await db.exec("update robot_flows set id='imile-ofd-maua2';update robot_runs set flow_id='imile-ofd-maua2';update import_batches set filename='ofd-imile-maua2-test.xlsx',imported_at='2026-11-07T02:41:01Z';update robot_runs set output_path='robot-reports/imile-ofd-maua2/ofd-imile-maua2-test.xlsx' where id='import';");
+  const pmu=(await db.query('select * from robot_flow_status')).rows[0];assert.equal(new Date(pmu.last_report_date).toISOString().slice(0,10),'2026-11-06');assert.equal(pmu.run_id,'login');
  }finally{await db.close();}
 });
