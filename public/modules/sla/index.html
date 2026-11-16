@@ -1077,7 +1077,7 @@
       </div>
       <div class="operation-head">
         <div class="operation-score">
-          <div class="operation-label">Conclusão dos pedidos atribuídos</div>
+          <div class="operation-label">SLA Operacional</div>
           <div class="operation-score-value"><span id="operation-sla">—</span><span class="pct">%</span></div>
           <div class="operation-score-text" id="operation-score-text">Pedidos que saíram em rota e foram entregues no mesmo dia.</div>
         </div>
@@ -4275,7 +4275,7 @@ function renderOperation(filtered, drivers) {
   const score = document.querySelector('.operation-score-value');
   if (score) score.style.color = cat.color;
   $('#operation-score-text').innerHTML = op.routeTotal
-    ? `<strong>${fmt(op.routeDelivered)}</strong> entregues no mesmo dia de <strong>${fmt(op.routeTotal)}</strong> pedidos atribuídos no recorte atual. A Visão Geral também inclui pedidos sem entregador e pode apresentar uma taxa menor.`
+    ? `<strong>${fmt(op.routeDelivered)}</strong> entregues no mesmo dia de <strong>${fmt(op.routeTotal)}</strong> pedidos em rota no recorte atual.`
     : 'Nenhuma saída em rota encontrada para o filtro selecionado.';
   $('#operation-driver-count').textContent = fmt(op.activeDrivers);
   $('#operation-received').textContent = op.received == null ? '—' : fmt(op.received);
