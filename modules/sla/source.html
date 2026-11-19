@@ -6211,8 +6211,8 @@ function robotBrasiliaDay(value) {
   return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
 }
 function robotDailyLoginDue(flow) {
-  return robotJmsFlow(flow.id) && flow.status !== 'running' && flow.status !== 'error'
-    && (flow.status !== 'completed' || robotBrasiliaDay(flow.started_at || flow.finished_at)!==robotBrasiliaDay(Date.now()));
+  // A virada do calendário não comprova expiração da sessão no portal.
+  return false;
 }
 let robotLoginEpoch=0;
 const robotLoginPending=new Set(),robotLoginWindows=new Set();
