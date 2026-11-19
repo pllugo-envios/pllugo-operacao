@@ -74,3 +74,5 @@
 .personalhome>header{height:auto;padding:0;background:transparent;border:0}.personalhome>header>div{display:block}.personalhome>header .eyebrow{display:block}
 
 .personaltime.complete{color:#159c6b}.personalagenda{scroll-margin-top:24px}
+
+.drawermode{margin:22px 0 13px}.drawermode .modeprofile{width:100%;margin:0;border:1px solid transparent;text-align:left;justify-content:flex-start;min-height:74px}.modeprofile>span{flex:1}.modeprofile>svg:last-child{color:#a0a1ad}.modeprofile[aria-expanded=true]{border-color:#f5cbd0;background:#fff5f6}.viewmodeoptions{border:1px solid #ececf1;border-radius:12px;margin-top:8px;padding:12px;background:#fff}.viewmodeoptions>small{display:block;font-size:10px;color:#93949e;margin:0 4px 8px}.viewmodeoptions>button{width:100%;justify-content:space-between;margin:3px 0;font-size:12px;padding:12px;border-color:transparent}.viewmodeoptions>button[aria-pressed=true]{color:#e94354;background:#fff0f2}.viewmodeoptions>p{font-size:10px;line-height:1.6;color:#9495a0;margin:10px 4px 2px}
