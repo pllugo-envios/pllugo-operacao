@@ -25,6 +25,8 @@ test('only the outside area dismisses a dialog; inner controls and active upload
 
 test('new home, routine overview and settings restore; retired manual closing does not',()=>fixture(()=>{
  saveNavigation(worker.id,{view:'SLA:geral',unit:'U1'});assert.equal(readNavigation(worker,units,'2026-11-05').view,'Início');
- for(const view of ['Início','Rotina:geral','Configuração']){saveNavigation(worker.id,{view,unit:'U1'});assert.equal(readNavigation(worker,units,'2026-11-05').view,view)}
+ for(const view of ['Início','Rotina:geral','Configuração']){saveNavigation(admin.id,{view,unit:'U1'});assert.equal(readNavigation(admin,units,'2026-11-05').view,view)}
  saveNavigation(admin.id,{view:'Qualidade & SLA',unit:'U1'});assert.equal(readNavigation(admin,units,'2026-11-05').view,'Início');
 }));
+
+test('operational navigation contains only home and personal tasks',()=>fixture(()=>{for(const view of ['Rotina:geral','Configuração','SLA:geral']){saveNavigation(worker.id,{view,unit:'U1'});assert.equal(readNavigation(worker,units,'2026-11-20').view,'Início')}saveNavigation(worker.id,{view:'Minhas tarefas',filter:'Próxima hora',unit:'U1'});assert.equal(readNavigation(worker,units,'2026-11-20').filter,'Próxima hora')}));
